@@ -1,12 +1,12 @@
 {
   "name": "twiscord_api",
-  "packageManager": "yarn@3.2.0",
+  "packageManager": "yarn@3.2.1",
   "version": "0.1.0",
   "description": "The API for the Twiscord bot platform",
   "main": "dist/index.js",
   "scripts": {
+    "start": "build && node .",
     "build": "tsc",
-    "start": "node .",
     "dev": "nodemon ./src/index.ts"
   },
   "repository": "https://github.com/mael-queau/twiscord-api",
