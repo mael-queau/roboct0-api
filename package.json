@@ -9,7 +9,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node .",
-    "build": "prisma generate && tsc",
+    "build": "tsc",
     "dev": "nodemon ./src/index.ts",
     "lint": "prettier . --write"
   },

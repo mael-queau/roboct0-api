@@ -2,28 +2,6 @@ import express from "express";
 import "colors";
 import dotenv from "dotenv/config";
 import dotenvExpand from "dotenv-expand";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
-
-prisma.channel
-  .upsert({
-    create: {
-      channelId: "foo",
-    },
-    update: {
-      channelId: "bar",
-    },
-    where: {
-      channelId: "foo",
-    },
-  })
-  .then((res) => {
-    console.log(res);
-  })
-  .catch((err) => {
-    console.error(err);
-  });
 
 dotenvExpand.expand(dotenv);
 
