@@ -8,7 +8,7 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "start": "build && node .",
+    "start": "yarn build && node .",
     "build": "tsc",
     "dev": "nodemon ./src/index.ts"
   },
