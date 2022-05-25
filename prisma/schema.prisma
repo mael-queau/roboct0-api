@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DB_URL")
+}
+
+model Channel {
+  id Int @id @default(autoincrement())
+
+  channelId  String    @unique
+  lastLive   DateTime?
+  registered DateTime  @default(now())
+  enabled    Boolean   @default(true)
+
+  guilds       Link[]
+  quotes       Quote[]
+  commands     Command[]
+  Wallet       Wallet[]
+  LoveCounters LoveCounter[]
+  Suggestion   Suggestion[]
+  User         User[]
+}
+
+model Guild {
+  id Int @id @default(autoincrement())
+
+  guildId    String   @unique
+  registered DateTime @default(now())
+  enabled    Boolean  @default(true)
+
+  botChannels    String[]
+  modRoles       String[]
+  linkedChannels Link[]
+}
+
+model Link {
+  id Int @id @default(autoincrement())
+
+  verified Boolean @default(false)
+  enabled  Boolean @default(true)
+
+  guild     Guild   @relation(fields: [guildId], references: [id])
+  guildId   Int
+  channel   Channel @relation(fields: [channelId], references: [id])
+  channelId Int
+
+  @@unique([guildId, channelId])
+}
+
+model User {
+  id Int @id @default(autoincrement())
+
+  discordId String  @unique
+  twitchId  String  @unique
+  enabled   Boolean @default(true)
+
+  wallets      Wallet[]
+  channels     Channel[]
+  loveCounters LoveCounter[]
+}
+
+model Wallet {
+  id Int @id @default(autoincrement())
+
+  amount    Int      @default(0)
+  lastAdded DateTime @default(now())
+  enabled   Boolean  @default(true)
+
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  channel   Channel @relation(fields: [channelId], references: [id])
+  channelId Int
+
+  @@unique([userId, channelId])
+}
+
+model LoveCounter {
+  id Int @id @default(autoincrement())
+
+  counter Int     @default(0)
+  enabled Boolean @default(true)
+
+  user      User    @relation(fields: [userId], references: [id])
+  userId    Int
+  channel   Channel @relation(fields: [channelId], references: [id])
+  channelId Int
+
+  @@unique([userId, channelId])
+}
+
+model Quote {
+  id Int @id @default(autoincrement())
+
+  content   String
+  timestamp DateTime @default(now())
+  edited    Boolean  @default(false)
+  enabled   Boolean  @default(true)
+
+  channel   Channel @relation(fields: [channelId], references: [id])
+  channelId Int
+}
+
+model Command {
+  id Int @id @default(autoincrement())
+
+  channel   Channel @relation(fields: [channelId], references: [id])
+  channelId Int
+
+  variables Variable[]
+}
+
+model Variable {
+  id Int @id @default(autoincrement())
+
+  name  String
+  value Int
+
+  command   Command @relation(fields: [commandId], references: [id])
+  commandId Int
+}
+
+model Suggestion {
+  id Int @id @default(autoincrement())
+
+  channel   Channel @relation(fields: [channelId], references: [id])
+  channelId Int
+}
