@@ -1,8 +1,11 @@
 {
   "name": "twiscord_api",
+  "description": "The API for the Twiscord bot platform",
   "packageManager": "yarn@3.2.1",
   "version": "0.1.0",
-  "description": "The API for the Twiscord bot platform",
+  "engines": {
+    "node": "16 || 18"
+  },
   "main": "dist/index.js",
   "scripts": {
     "start": "build && node .",
