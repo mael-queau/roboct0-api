@@ -5,7 +5,7 @@ import dotenvExpand from "dotenv-expand";
 
 dotenvExpand.expand(dotenv);
 
-const appPort = process.env.API_PORT ?? 3000;
+const appPort = process.env.API_PORT ?? 80;
 const app = express();
 
 app.get("/", (_req, res) => {
