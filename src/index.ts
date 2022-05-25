@@ -1,5 +1,9 @@
 import express from "express";
 import "colors";
+import dotenv from "dotenv/config";
+import dotenvExpand from "dotenv-expand";
+
+dotenvExpand.expand(dotenv);
 
 const appPort = process.env.API_PORT ?? 3000;
 const app = express();

@@ -1079,6 +1079,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"dotenv-expand@npm:^8.0.3":
+  version: 8.0.3
+  resolution: "dotenv-expand@npm:8.0.3"
+  checksum: 128ce90ac825b543de3ece0154a51b056ab0dc36bb26d97a68cd0b8707327ecd3c182fb6ac63b26a0fcdfa85064419906a1065cb634f1f9dc08ad311375f1fc0
+  languageName: node
+  linkType: hard
+
+"dotenv@npm:^16.0.1":
+  version: 16.0.1
+  resolution: "dotenv@npm:16.0.1"
+  checksum: f459ffce07b977b7f15d8cc4ee69cdff77d4dd8c5dc8c85d2d485ee84655352c2415f9dd09d42b5b5985ced3be186130871b34e2f3e2569ebc72fbc2e8096792
+  languageName: node
+  linkType: hard
+
 "duplexer3@npm:^0.1.4":
   version: 0.1.4
   resolution: "duplexer3@npm:0.1.4"
@@ -2953,6 +2967,8 @@ __metadata:
     "@types/node": ^17.0.35
     "@yarnpkg/sdks": ^3.0.0-rc.6
     colors: ^1.4.0
+    dotenv: ^16.0.1
+    dotenv-expand: ^8.0.3
     express: ^4.18.1
     nodemon: ^2.0.16
     prettier: ^2.6.2
