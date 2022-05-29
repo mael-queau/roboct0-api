@@ -47,7 +47,12 @@ router.get("/:channelId/", (req, res, next) => {
             enabled: true,
         },
     })
-        .then((result) => res.status(200).json(result))
+        .then((result) => {
+        if (result === null)
+            res.sendStatus(404);
+        else
+            res.status(200).json(result);
+    })
         .catch((err) => {
         console.error(err);
         res.sendStatus(500);
