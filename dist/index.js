@@ -16,6 +16,12 @@ server.use("/api", api);
 server.set("env", process.env.NODE_ENV);
 api.use(express_1.default.json());
 api.use(express_1.default.urlencoded({ extended: true }));
+api.use((req, res, next) => {
+    if (req.headers["r0_key"] !== process.env.R0_KEY)
+        res.sendStatus(401);
+    else
+        next();
+});
 const v1_1 = __importDefault(require("./v1"));
 api.use("/v1", v1_1.default);
 server.listen(appPort, () => {

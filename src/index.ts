@@ -14,6 +14,11 @@ server.set("env", process.env.NODE_ENV);
 api.use(express.json());
 api.use(express.urlencoded({ extended: true }));
 
+api.use((req, res, next) => {
+  if (req.headers["r0_key"] !== process.env.R0_KEY) res.sendStatus(401);
+  else next();
+});
+
 import api_v1 from "./v1";
 api.use("/v1", api_v1);
 
