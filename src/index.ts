@@ -18,5 +18,5 @@ import api_v1 from "./v1";
 api.use("/v1", api_v1);
 
 server.listen(appPort, () => {
-  console.log(`🚀 Api listening on port ${appPort}!`.grey.bold);
+  console.log(`🚀 Api is listening on port ${appPort}!`.grey.bold);
 });
