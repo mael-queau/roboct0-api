@@ -13,10 +13,14 @@ datasource db {
 model Channel {
   id Int @id @default(autoincrement())
 
-  channelId  String    @unique
-  lastLive   DateTime?
-  registered DateTime  @default(now())
-  enabled    Boolean   @default(true)
+  channelId    String    @unique
+  lastLive     DateTime?
+  registered   DateTime  @default(now())
+  enabled      Boolean   @default(true)
+  accessToken  String
+  refreshToken String
+  lastRefresh  DateTime
+  expiresIn    DateTime
 
   guilds       Link[]
   quotes       Quote[]
@@ -30,9 +34,13 @@ model Channel {
 model Guild {
   id Int @id @default(autoincrement())
 
-  guildId    String   @unique
-  registered DateTime @default(now())
-  enabled    Boolean  @default(true)
+  guildId      String   @unique
+  registered   DateTime @default(now())
+  enabled      Boolean  @default(true)
+  accessToken  String
+  refreshToken String
+  lastRefresh  DateTime
+  expiresIn    DateTime
 
   botChannels    String[]
   modRoles       String[]

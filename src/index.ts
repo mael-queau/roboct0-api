@@ -3,6 +3,8 @@ import express from "express";
 import dotenv from "dotenv/config";
 import dotenvExpand from "dotenv-expand";
 
+import "./appTokenManager";
+
 dotenvExpand.expand(dotenv);
 
 const appPort = process.env.PORT ?? 3000;

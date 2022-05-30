@@ -8,6 +8,7 @@ require("colors");
 const express_1 = __importDefault(require("express"));
 const config_1 = __importDefault(require("dotenv/config"));
 const dotenv_expand_1 = __importDefault(require("dotenv-expand"));
+require("./appTokenManager");
 dotenv_expand_1.default.expand(config_1.default);
 const appPort = (_a = process.env.PORT) !== null && _a !== void 0 ? _a : 3000;
 const server = (0, express_1.default)();
