@@ -21,6 +21,9 @@ api.use((req, res, next) => {
   else next();
 });
 
+server.get(`/`, (_req, res) => {
+  res.send(`Je t'aime, Lisa 🥰😘❤️`);
+});
 import api_v1 from "./v1";
 api.use("/v1", api_v1);
 
