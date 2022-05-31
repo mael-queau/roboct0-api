@@ -10,17 +10,56 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TokenPlatform {
+  TWITCH
+  DISCORD
+}
+
+enum TokenType {
+  authorization_code
+  client_credentials
+}
+
+model State {
+  id        Int      @id @default(autoincrement())
+  value     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Token {
+  id Int @id @default(autoincrement())
+
+  token        String    @unique
+  type         TokenType
+  refreshToken String?
+  refreshed    DateTime  @default(now())
+  expiresIn    DateTime
+
+  BotToken BotToken[]
+  Channel  Channel[]
+  Guild    Guild[]
+}
+
+model BotToken {
+  id Int @id @default(autoincrement())
+
+  platform TokenPlatform @unique
+
+  token   Token @relation(fields: [tokenId], references: [id])
+  tokenId Int
+}
+
 model Channel {
   id Int @id @default(autoincrement())
 
-  channelId    String    @unique
-  lastLive     DateTime?
-  registered   DateTime  @default(now())
-  enabled      Boolean   @default(true)
-  accessToken  String
-  refreshToken String
-  lastRefresh  DateTime
-  expiresIn    DateTime
+  channelId   String    @unique
+  channelName String
+  lastLive    DateTime?
+  registered  DateTime  @default(now())
+  enabled     Boolean   @default(true)
+
+  token   Token @relation(fields: [tokenId], references: [id])
+  tokenId Int
 
   guilds       Link[]
   quotes       Quote[]
@@ -34,13 +73,12 @@ model Channel {
 model Guild {
   id Int @id @default(autoincrement())
 
-  guildId      String   @unique
-  registered   DateTime @default(now())
-  enabled      Boolean  @default(true)
-  accessToken  String
-  refreshToken String
-  lastRefresh  DateTime
-  expiresIn    DateTime
+  guildId    String   @unique
+  registered DateTime @default(now())
+  enabled    Boolean  @default(true)
+
+  token   Token @relation(fields: [tokenId], references: [id])
+  tokenId Int
 
   botChannels    String[]
   modRoles       String[]

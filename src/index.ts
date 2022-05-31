@@ -3,8 +3,6 @@ import express from "express";
 import dotenv from "dotenv/config";
 import dotenvExpand from "dotenv-expand";
 
-import "./appTokenManager";
-
 dotenvExpand.expand(dotenv);
 
 const appPort = process.env.PORT ?? 3000;
@@ -24,6 +22,10 @@ api.use((req, res, next) => {
 server.get(`/`, (_req, res) => {
   res.send(`Je t'aime, Lisa 🥰😘❤️`);
 });
+
+import twitch_auth from "./auth/twitch";
+server.use(twitch_auth);
+
 import api_v1 from "./v1";
 api.use("/v1", api_v1);
 
