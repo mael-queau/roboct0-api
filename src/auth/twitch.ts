@@ -52,6 +52,7 @@ router.route("/twitch/callback").get(async (req, res) => {
       createdAt: true,
     },
   });
+
   if (state && dayjs().diff(state.createdAt, "minutes") > 10) {
     db.state.delete({
       where: {
@@ -60,7 +61,8 @@ router.route("/twitch/callback").get(async (req, res) => {
     });
     res.status(400).send("This session has expired, please try again");
     return;
-  } else console.log("State hasn't expired");
+  }
+
   if (req.query.error) {
     if (req.query.error === "access_denied")
       res.status(400).send("Operation aborted by the user");
@@ -81,12 +83,12 @@ router.route("/twitch/callback").get(async (req, res) => {
       .post(url, params)
       .then(async ({ data: tokenData }) => {
         const channelData = await getChannelFromToken(tokenData.access_token);
-        console.log(channelData);
         db.channel
-          .create({
-            data: {
+          .upsert({
+            create: {
               channelId: channelData.id,
               channelName: channelData.display_name,
+              channelLogin: channelData.login,
               token: {
                 connectOrCreate: {
                   create: {
@@ -101,15 +103,28 @@ router.route("/twitch/callback").get(async (req, res) => {
                 },
               },
             },
+            update: {
+              token: {
+                connectOrCreate: {
+                  create: {
+                    token: tokenData.access_token,
+                    refreshToken: tokenData.refresh_token,
+                    expiresIn: new Date(tokenData.expires_in),
+                    type: "authorization_code",
+                  },
+                  where: {
+                    token: tokenData.access_token,
+                  },
+                },
+              },
+            },
+            where: {
+              channelId: channelData.id,
+            },
             include: { token: true },
           })
-          .then((result) => {
-            console.log(result);
-            res
-              .status(201)
-              .send(
-                `This channel was registered successfully. https://twitch.tv/${channelData.login} was registered.`
-              );
+          .then(() => {
+            res.sendStatus(201);
           })
           .catch((err) => {
             console.error(err);

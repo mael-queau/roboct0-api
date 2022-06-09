@@ -2,7 +2,8 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -52,11 +53,12 @@ model BotToken {
 model Channel {
   id Int @id @default(autoincrement())
 
-  channelId   String    @unique
-  channelName String
-  lastLive    DateTime?
-  registered  DateTime  @default(now())
-  enabled     Boolean   @default(true)
+  channelId    String    @unique
+  channelLogin String    @unique
+  channelName  String
+  lastLive     DateTime?
+  registered   DateTime  @default(now())
+  enabled      Boolean   @default(true)
 
   token   Token @relation(fields: [tokenId], references: [id])
   tokenId Int
@@ -64,10 +66,10 @@ model Channel {
   guilds       Link[]
   quotes       Quote[]
   commands     Command[]
-  Wallet       Wallet[]
+  Wallets      Wallet[]
   LoveCounters LoveCounter[]
-  Suggestion   Suggestion[]
-  User         User[]
+  Suggestions  Suggestion[]
+  Users        User[]
 }
 
 model Guild {
