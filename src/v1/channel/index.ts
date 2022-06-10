@@ -1,19 +1,20 @@
 import { Router } from "express";
 import { z, ZodError } from "zod";
 import db from "../../db";
+import { handlePrismaError } from "../../helper";
 
 const router = Router({ mergeParams: true });
 
 export default router;
 
 router.get("", (req, res) => {
-  const query = z.object({
+  const queryValidator = z.object({
     search: z.string().min(1, "'search' cannot be empty").nullish(),
     limit: z.number().int().max(0).nullish(),
     offset: z.number().int().max(0).nullish(),
   });
   try {
-    const parsedQuery = query.parse(req.query);
+    const parsedQuery = queryValidator.parse(req.query);
     db.channel
       .findMany({
         select: {
@@ -36,9 +37,8 @@ router.get("", (req, res) => {
       .then((result) => {
         res.json(result);
       })
-      .catch(() => {
-        // TODO: error handling
-        res.sendStatus(500);
+      .catch((err) => {
+        handlePrismaError(err, res);
       });
   } catch (err) {
     if (err instanceof ZodError) res.status(400).send(err.format());
