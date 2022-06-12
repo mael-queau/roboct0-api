@@ -9,7 +9,7 @@ export default router;
 
 router.get("", (req, res) => {
   const queryValidator = z.object({
-    search: z.string().min(1, "'search' cannot be empty").nullish(),
+    search: z.string().optional(),
     limit: z.number().int().max(0).nullish(),
     offset: z.number().int().max(0).nullish(),
   });
@@ -17,12 +17,23 @@ router.get("", (req, res) => {
     const parsedQuery = queryValidator.parse(req.query);
     db.channel
       .findMany({
+        where: {
+          channelName: {
+            contains: parsedQuery.search,
+            mode: "insensitive",
+          },
+        },
         select: {
           channelId: true,
           channelLogin: true,
           channelName: true,
           enabled: true,
           registered: true,
+          _count: {
+            select: {
+              guilds: true,
+            },
+          },
         },
         take: parsedQuery.limit ?? 10,
         skip: parsedQuery.offset ?? 0,
@@ -30,12 +41,16 @@ router.get("", (req, res) => {
           _relevance: {
             fields: ["channelName"],
             search: parsedQuery.search ?? "",
-            sort: "asc",
+            sort: "desc",
           },
         },
       })
       .then((result) => {
-        res.json(result);
+        res.json(
+          result.sort((r1, r2) => {
+            return r1._count.guilds - r2._count.guilds;
+          })
+        );
       })
       .catch((err) => {
         handlePrismaError(err, res);
@@ -47,10 +62,14 @@ router.get("", (req, res) => {
 });
 
 router.get("/:login", (req, res) => {
+  const paramsValidator = z.object({
+    login: z.string(),
+  });
+  const parsedParams = paramsValidator.parse(req.params);
   db.channel
     .findUnique({
       where: {
-        channelLogin: `${req.params.login}`,
+        channelLogin: parsedParams.login,
       },
       select: {
         channelId: true,
@@ -58,6 +77,14 @@ router.get("/:login", (req, res) => {
         enabled: true,
         lastLive: true,
         registered: true,
+        _count: {
+          select: {
+            commands: true,
+            guilds: true,
+            quotes: true,
+            Users: true,
+          },
+        },
       },
     })
     .then((result) => {
@@ -68,6 +95,6 @@ router.get("/:login", (req, res) => {
       }
     })
     .catch((err) => {
-      console.error(err);
+      handlePrismaError(err, res);
     });
 });
