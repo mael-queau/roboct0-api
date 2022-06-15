@@ -18,10 +18,10 @@ model State {
 
 model Twitch {
   id           Int      @id @default(autoincrement())
+  enabled      Boolean  @default(true)
   token        String
   refreshToken String
   createdAt    DateTime @default(now())
-  expiresIn    Int
 
   @@unique([token])
 }

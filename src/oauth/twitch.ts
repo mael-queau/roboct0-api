@@ -1,27 +1,14 @@
-import { PrismaClient, State } from "@prisma/client";
+import { PrismaClient, Twitch } from "@prisma/client";
 import { Router } from "express";
-import crypto from "crypto";
 import { z, ZodError } from "zod";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
+import { createState, deleteState } from "./helper";
 
 export const router = Router();
 const db = new PrismaClient();
 
 router.get("/twitch", async (_req, res) => {
-  const state = crypto.randomBytes(20).toString("hex");
-  try {
-    await db.state.create({
-      data: { value: state },
-      select: { value: true },
-    });
-  } catch (err) {
-    res.status(500).json({
-      success: false,
-      message: "There was an error processing your request.",
-    });
-    return;
-  }
-
+  const state = await createState();
   const scopes = [
     "channel:manage:broadcast",
     "clips:edit",
@@ -69,7 +56,7 @@ router.get("/twitch/callback", async (req, res) => {
         });
       } else if (parsedQuery.code) {
         let targetUrl = `https://id.twitch.tv/oauth2/token`;
-        let parameters = new URLSearchParams();
+        const parameters = new URLSearchParams();
         parameters.append("client_id", process.env.TWITCH_ID as string);
         parameters.append("client_secret", process.env.TWITCH_SECRET as string);
         parameters.append("code", parsedQuery.code);
@@ -148,8 +135,70 @@ router.get("/twitch/callback", async (req, res) => {
   }
 });
 
-async function deleteState(state: State) {
-  await db.state.delete({ where: { value: state.value } }).catch((err) => {
-    throw err;
+/**
+ * Refreshes a Twitch access token
+ * @description In the context of the Twitch API's OAuth2 integration, we need to regularly refresh access tokens. This automates that process.
+ * @param channel A Prisma Channel object (containing token information for a specific user)
+ * @returns An updated version of that Prisma Channel object, with the updated token information
+ */
+export async function refreshToken(channel: Twitch): Promise<Twitch> {
+  const parameters = new URLSearchParams();
+  parameters.append("client_id", process.env.TWITCH_ID as string);
+  parameters.append("client_secret", process.env.TWITCH_SECRET as string);
+  parameters.append("grant_type", "refresh_token");
+  parameters.append("refresh_token", channel.refreshToken);
+
+  const { data } = await axios.post(
+    `https://id.twitch.tv/oauth2/token`,
+    parameters
+  );
+
+  const dataValidator = z.object({
+    access_token: z.string(),
+    refresh_token: z.string(),
   });
+
+  const { access_token, refresh_token } = dataValidator.parse(data);
+
+  const result = await db.twitch.update({
+    data: {
+      token: access_token,
+      refreshToken: refresh_token,
+    },
+    where: {
+      id: channel.id,
+    },
+  });
+  console.log(`Token ${result.id} was refreshed successfully.`);
+  return result;
+}
+
+export async function verifyTokens(): Promise<Twitch[]> {
+  const channels = await db.twitch.findMany();
+
+  const invalidTokens: Twitch[] = [];
+  const targetUrl = `https://id.twitch.tv/oauth2/validate`;
+
+  await Promise.all(
+    channels.map(async (channel) => {
+      let { token } = channel;
+      try {
+        await axios.get(targetUrl, {
+          headers: {
+            Authorization: `OAuth ${token}`,
+          },
+        });
+        console.log(`Successfully validated token ${channel.id}`);
+      } catch (err) {
+        if (err instanceof AxiosError) {
+          if (err.code === "ERR_BAD_REQUEST") {
+            console.log(`Token ${channel.id} couldn't be validated.`);
+            invalidTokens.push(channel);
+          } else console.error(err);
+        } else console.error(err);
+      }
+    })
+  );
+
+  return invalidTokens;
 }
