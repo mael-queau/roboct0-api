@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "Token" ALTER COLUMN "refreshed" SET DEFAULT CURRENT_TIMESTAMP;

@@ -10,3 +10,18 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model State {
+  value     String   @id
+  createdAt DateTime @default(now())
+}
+
+model Twitch {
+  id           Int      @id @default(autoincrement())
+  token        String
+  refreshToken String
+  createdAt    DateTime @default(now())
+  expiresIn    Int
+
+  @@unique([token])
+}
