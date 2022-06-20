@@ -1,7 +1,7 @@
 {
   "name": "roboct0_api",
   "packageManager": "yarn@3.2.1",
-  "description": "The API for the Twiscord bot platform",
+  "description": "The API for the RobOct0 bot platform",
   "version": "0.1.0",
   "engines": {
     "node": "18"
