@@ -176,15 +176,18 @@ export async function refreshToken(channel: Twitch): Promise<Twitch> {
     console.warn(
       `Token ${channel.id} couldn't be refreshed. This channel has hence been disabled.`
     );
-    const newChannel = await db.twitch.update({
-      where: {
-        id: channel.id,
-      },
-      data: {
-        enabled: false,
-      },
-    });
-    return newChannel;
+    // if node is in dev mode
+    if (process.env.NODE_ENV !== "development") {
+      const newChannel = await db.twitch.update({
+        where: {
+          id: channel.id,
+        },
+        data: {
+          enabled: false,
+        },
+      });
+      return newChannel;
+    } else return channel;
   }
 }
 
