@@ -5,18 +5,6 @@ import "colors";
 
 dotenvExpand.expand(dotenv);
 
-export const twitchApi = axios.create({
-  headers: {
-    "Client-Id": process.env.TWITCH_ID!,
-  },
-});
-
-export const discordApi = axios.create({
-  headers: {
-    "Client-Id": process.env.DISCORD_ID!,
-  },
-});
-
 const server = express();
 const port = process.env.PORT ?? "3000";
 
