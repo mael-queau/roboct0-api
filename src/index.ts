@@ -8,6 +8,9 @@ dotenvExpand.expand(dotenv);
 const server = express();
 const port = process.env.PORT ?? "3000";
 
+import api from "./api";
+server.use("/api", api);
+
 import { refreshToken, verifyTokens } from "./oauth/twitch";
 
 verifyTokens().then((invalidChannels) => {
