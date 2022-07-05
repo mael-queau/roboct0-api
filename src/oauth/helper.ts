@@ -1,6 +1,5 @@
 import crypto from "crypto";
 import { PrismaClient, State } from "@prisma/client";
-import { twitchApi } from "..";
 
 const db = new PrismaClient();
 
@@ -42,18 +41,19 @@ export async function deleteState(state: State | string): Promise<void> {
 
 export async function getUserInfo(token: string) {
   try {
-    const { data: info } = await twitchApi.get(
-      `https://api.twitch.tv/helix/users`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
-    const { id, login } = info.data[0];
+    const response = await fetch("https://api.twitch.tv/helix/users", {
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Client-Id": process.env.TWITCH_ID!,
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Failed to get user info.");
+    }
+    const { data } = await response.json();
     return {
-      id,
-      login,
+      id: data[0].id,
+      login: data[0].login,
     };
   } catch (e) {
     throw e;
