@@ -17,11 +17,30 @@ model State {
 }
 
 model Twitch {
-  id           Int      @id @default(autoincrement())
-  enabled      Boolean  @default(true)
+  id Int @id @default(autoincrement())
+
+  twitchId     String
+  username     String
   token        String
   refreshToken String
-  createdAt    DateTime @default(now())
+  lastRefresh  DateTime @default(now())
+  registeredAt DateTime @default(now())
+  enabled      Boolean  @default(true)
+  guilds       Guild[]
 
-  @@unique([token])
+  @@unique([twitchId])
+}
+
+model Guild {
+  id Int @id @default(autoincrement())
+
+  guildId        String
+  token          String
+  refreshToken   String
+  lastRefresh    DateTime @default(now())
+  registeredAt   DateTime @default(now())
+  enabled        Boolean  @default(true)
+  twitchChannels Twitch[]
+
+  @@unique([guildId])
 }

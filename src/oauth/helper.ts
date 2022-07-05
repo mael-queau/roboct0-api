@@ -1,5 +1,6 @@
 import crypto from "crypto";
 import { PrismaClient, State } from "@prisma/client";
+import { twitchApi } from "..";
 
 const db = new PrismaClient();
 
@@ -15,8 +16,8 @@ export async function createState(): Promise<string> {
       data: { value: state },
       select: { value: true },
     })
-    .catch((err) => {
-      throw err;
+    .catch((e) => {
+      throw e;
     });
   return state;
 }
@@ -28,7 +29,33 @@ export async function createState(): Promise<string> {
  */
 export async function deleteState(state: State | string): Promise<void> {
   let stateString = typeof state === "string" ? state : state.value;
-  await db.state.delete({ where: { value: stateString } }).catch((err) => {
-    throw err;
-  });
+  await db.state
+    .delete({
+      where: {
+        value: stateString,
+      },
+    })
+    .catch((e) => {
+      throw e;
+    });
+}
+
+export async function getUserInfo(token: string) {
+  try {
+    const { data: info } = await twitchApi.get(
+      `https://api.twitch.tv/helix/users`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    const { id, login } = info.data[0];
+    return {
+      id,
+      login,
+    };
+  } catch (e) {
+    throw e;
+  }
 }

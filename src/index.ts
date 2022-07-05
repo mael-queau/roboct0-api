@@ -5,10 +5,23 @@ import "colors";
 
 dotenvExpand.expand(dotenv);
 
+export const twitchApi = axios.create({
+  headers: {
+    "Client-Id": process.env.TWITCH_ID!,
+  },
+});
+
+export const discordApi = axios.create({
+  headers: {
+    "Client-Id": process.env.DISCORD_ID!,
+  },
+});
+
 const server = express();
 const port = process.env.PORT ?? "3000";
 
 import { refreshToken, verifyTokens } from "./oauth/twitch";
+
 verifyTokens().then((invalidChannels) => {
   invalidChannels.forEach(refreshToken);
 });
@@ -18,9 +31,9 @@ setInterval(() => {
   });
 }, 3600000);
 
-import { router as router_twitch_oauth } from "./oauth/twitch";
-server.use(router_twitch_oauth);
+import oauth from "./oauth";
+server.use("", oauth);
 
 server.listen(port, () => {
-  console.log(`🚀 API is listening on port ${port}`.grey.bold);
+  console.log(`🚀 API is listening on port ${port}`.dim);
 });
