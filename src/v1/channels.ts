@@ -75,3 +75,124 @@ router.get("", async (req, res) => {
     }
   }
 });
+
+router
+  .route("/:id")
+  .get(async (req, res) => {
+    const { id } = req.params;
+    const result = await db.twitch.findUnique({
+      where: {
+        twitchId: id,
+      },
+      include: {
+        guilds: {
+          select: {
+            _count: true,
+          },
+        },
+      },
+    });
+    if (result === null) {
+      res.status(404).json({
+        success: false,
+        message: "This Twitch channel isn't registered with us.",
+      });
+    } else {
+      res.json({
+        success: true,
+        data: {
+          id: result.twitchId,
+          username: result.username,
+          enabled: result.enabled,
+          registered_at: result.registeredAt,
+          guild_count: result.guilds.length,
+        },
+      });
+    }
+  })
+  .patch(async (req, res) => {
+    const { id } = req.params;
+    const bodyValidator = z.object({
+      enabled: z.boolean().optional(),
+    });
+
+    try {
+      const parsedBody = bodyValidator.parse(req.body);
+
+      const existing = await db.twitch.findUnique({
+        where: {
+          twitchId: id,
+        },
+      });
+
+      if (existing === null) {
+        res.status(404).json({
+          success: false,
+          message: "This Twitch channel isn't registered with us.",
+        });
+      } else {
+        const result = await db.twitch.update({
+          where: {
+            twitchId: id,
+          },
+          data: {
+            enabled: parsedBody.enabled ?? !existing.enabled,
+          },
+          select: {
+            twitchId: true,
+            username: true,
+            registeredAt: true,
+            enabled: true,
+            guilds: {
+              select: {
+                guildId: true,
+              },
+            },
+          },
+        });
+        res.json({
+          success: true,
+          data: {
+            id: result.twitchId,
+            username: result.username,
+            enabled: result.enabled,
+            registered_at: result.registeredAt,
+            guild_count: result.guilds.length,
+          },
+        });
+      }
+    } catch (e) {
+      if (e instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "The query parameters are invalid.",
+          detail: e.format(),
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "An unexpected error occurred.",
+        });
+      }
+    }
+  })
+  .delete(async (req, res) => {
+    const { id } = req.params;
+    const result = await db.twitch.delete({
+      where: {
+        twitchId: id,
+      },
+    });
+    if (result === null) {
+      res.status(404).json({
+        success: false,
+        message: "This Twitch channel isn't registered with us.",
+      });
+    } else {
+      res.json({
+        success: true,
+        message: "The Twitch channel was successfully deleted.",
+      });
+    }
+  });
