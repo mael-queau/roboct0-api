@@ -70,7 +70,9 @@ router.get("/twitch/callback", async (req, res) => {
 
       await deleteState(state);
 
-      console.log(`🎉 ${userInfo.login} just linked their account.`.blue);
+      console.log(
+        `🎉 ${userInfo.login} just linked their Twitch account.`.blue
+      );
 
       res.status(201).json({
         success: true,

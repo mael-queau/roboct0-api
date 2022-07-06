@@ -66,6 +66,10 @@ router.get("/discord/callback", async (req, res) => {
 
       await deleteState(state);
 
+      console.log(
+        `🎉 The guild ${parsedQuery.guild_id} has been registered.`.blue
+      );
+
       res.status(201).json({
         success: true,
         message: "The guild was successfully registered.",
