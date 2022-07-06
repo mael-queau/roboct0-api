@@ -7,6 +7,8 @@ import "colors";
 dotenvExpand.expand(dotenv);
 
 const server = express();
+server.use(express.json());
+server.use(express.urlencoded({ extended: true }));
 const port = process.env.PORT ?? "3000";
 
 import api from "./api";
