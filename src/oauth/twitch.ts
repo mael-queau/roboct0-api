@@ -70,6 +70,8 @@ router.get("/twitch/callback", async (req, res) => {
 
       await deleteState(state);
 
+      console.log(`🎉 ${userInfo.login} just linked their account.`.blue);
+
       res.status(201).json({
         success: true,
         message: "The channel was successfully registered.",
@@ -170,12 +172,12 @@ export async function refreshToken(channel: Twitch): Promise<Twitch> {
         id: channel.id,
       },
     });
-    console.log(`Token ${result.id} was refreshed successfully.`);
+    console.log(
+      `✅ Successfully refreshed token for ${channel.username}`.green
+    );
     return result;
   } catch (e) {
-    console.warn(
-      `Token ${channel.id} couldn't be refreshed. This channel has hence been disabled.`
-    );
+    console.log(`❌ Failed to refresh token for ${channel.username}`.red);
     // if node is in dev mode
     if (process.env.NODE_ENV !== "development") {
       const newChannel = await db.twitch.update({
@@ -200,10 +202,12 @@ export async function verifyTokens(): Promise<Twitch[]> {
     where: { enabled: true },
   });
 
+  console.log(`Verifying ${channels.length} enabled channels...`);
+
   const invalidTokens: Twitch[] = [];
 
-  await Promise.all(
-    channels.map(async (channel) => {
+  for (const channel of channels) {
+    try {
       let { token } = channel;
       const response = await fetch("https://id.twitch.tv/oauth2/validate", {
         headers: {
@@ -217,9 +221,13 @@ export async function verifyTokens(): Promise<Twitch[]> {
         } else {
           throw new Error(`There was an error verifying token ${channel.id}.`);
         }
-      } else console.log(`Successfully validated token ${channel.id}`);
-    })
-  );
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  console.log(`${invalidTokens.length} channels need to be refreshed.`);
 
   return invalidTokens;
 }

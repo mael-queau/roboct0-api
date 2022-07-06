@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv/config";
 import dotenvExpand from "dotenv-expand";
+import { PrismaClient } from "@prisma/client";
 import "colors";
 
 dotenvExpand.expand(dotenv);
@@ -12,6 +13,9 @@ import api from "./api";
 server.use("/api", api);
 
 import { refreshToken, verifyTokens } from "./oauth/twitch";
+
+const prisma = new PrismaClient();
+prisma.state.deleteMany({});
 
 verifyTokens().then((invalidChannels) => {
   invalidChannels.forEach(refreshToken);
