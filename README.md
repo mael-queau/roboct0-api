@@ -11,28 +11,34 @@
     - [x] Refreshing of invalid tokens
     - [x] Disabling of unrefreshable tokens
 - [ ] API
-  - [x] `/channels`
-    - [x] `GET` - Get multiple or search for channels
-    - [x] `/channels/:id`
-      - [x] `GET` - Get single
+  - [x] `>/channels`
+    - [x] `GET` - List or search
+    - [x] `>/channels/:id`
+      - [x] `GET`
       - [x] `PATCH` - Toggle
-      - [x] `DELETE` - Completely remove
-      - [x] `/channels/:id/guilds`
-        - [x] `GET` - Only returns a count
+      - [x] `DELETE`
+      - [x] `>/guilds`
+        - [x] `GET` - Get number of guilds that have added the channel
         - [x] `POST` - Add the channel to a guild
         - [x] `DELETE` - Remove the channel from a guild
-      - [ ] `/channels/:id/users`
-        - [ ] `/channels/:id/users/:userId`
-          - [ ] `/channels/:id/users/:userId/balance`
-      - [ ] `/channels/:id/quotes`
-        - [ ] `/channels/:id/quotes/:quoteId`
-      - [ ] `/channels/:id/suggestions`
-        - [ ] `/channels/:id/suggestions/:suggestionId`
-      - [ ] `/channels/:id/loveCounters`
-        - [ ] `/channels/:id/loveCounters/:userId`
-      - [ ] `/channels/:id/commands`
-        - [ ] `/channels/:id/commands/:keyword`
-          - [ ] `/channels/:id/commands/:keyword/variables`
-            - [ ] `/channels/:id/commands/:keyword/variables/:varId`
-      - [ ] `/channels/:id/deathCounters`
-        - [ ] `/channels/:id/deathCounters/:gameId`
+      - [ ] `>/users`
+        - [ ] `>/:userId`
+          - [ ] `>/balance`
+      - [ ] `>/quotes`
+        - [ ] `GET` - List, random, or search
+        - [ ] `POST`
+        - [ ] `>/:quoteId`
+          - [ ] `GET`
+          - [ ] `PUT` - Edit content
+          - [ ] `PATCH` - Toggle
+          - [ ] `DELETE`
+      - [ ] `>/suggestions`
+        - [ ] `>/:suggestionId`
+      - [ ] `>/loveCounters`
+        - [ ] `>/:userId`
+      - [ ] `>/commands`
+        - [ ] `>/:keyword`
+          - [ ] `>/variables`
+            - [ ] `>/:varId`
+      - [ ] `>/deathCounters`
+        - [ ] `>/:gameId`
