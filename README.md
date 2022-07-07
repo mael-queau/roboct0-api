@@ -13,14 +13,10 @@
 - [ ] API
   - [x] `>/channels`
     - [x] `GET` - List or search
-    - [x] `>/channels/:id`
+    - [x] `>/:id`
       - [x] `GET`
       - [x] `PATCH` - Toggle
       - [x] `DELETE`
-      - [x] `>/guilds`
-        - [x] `GET` - Get number of guilds that have added the channel
-        - [x] `POST` - Add the channel to a guild
-        - [x] `DELETE` - Remove the channel from a guild
       - [ ] `>/users`
         - [ ] `>/:userId`
           - [ ] `>/balance`
@@ -42,3 +38,5 @@
             - [ ] `>/:varId`
       - [ ] `>/deathCounters`
         - [ ] `>/:gameId`
+  - [ ] `>/guilds`
+    - [ ] `>/:id`
