@@ -16,31 +16,44 @@ model State {
   createdAt DateTime @default(now())
 }
 
-model Twitch {
+model Channel {
   id Int @id @default(autoincrement())
 
-  twitchId     String
+  channelId    String
   username     String
   token        String
   refreshToken String
   lastRefresh  DateTime @default(now())
   registeredAt DateTime @default(now())
   enabled      Boolean  @default(true)
+  quoteIndex   Int      @default(1)
   guilds       Guild[]
+  quotes       Quote[]
 
-  @@unique([twitchId])
+  @@unique([channelId])
 }
 
 model Guild {
   id Int @id @default(autoincrement())
 
-  guildId        String
-  token          String
-  refreshToken   String
-  lastRefresh    DateTime @default(now())
-  registeredAt   DateTime @default(now())
-  enabled        Boolean  @default(true)
-  twitchChannels Twitch[]
+  guildId         String
+  token           String
+  refreshToken    String
+  lastRefresh     DateTime  @default(now())
+  registeredAt    DateTime  @default(now())
+  enabled         Boolean   @default(true)
+  channelChannels Channel[]
 
   @@unique([guildId])
+}
+
+model Quote {
+  id Int @id @default(autoincrement())
+
+  quoteId   Int
+  content   String
+  date      DateTime @default(now())
+  enabled   Boolean  @default(true)
+  channel   Channel  @relation(fields: [channelId], references: [id])
+  channelId Int
 }

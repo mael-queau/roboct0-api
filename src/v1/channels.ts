@@ -30,9 +30,9 @@ router.get("", async (req, res) => {
 
   try {
     const parsedQuery = queryValidator.parse(req.query);
-    const results = await db.twitch.findMany({
+    const results = await db.channel.findMany({
       select: {
-        twitchId: true,
+        channelId: true,
         username: true,
         registeredAt: true,
         _count: {
@@ -80,9 +80,9 @@ router
   .route("/:id")
   .get(async (req, res) => {
     const { id } = req.params;
-    const result = await db.twitch.findUnique({
+    const result = await db.channel.findUnique({
       where: {
-        twitchId: id,
+        channelId: id,
       },
       include: {
         guilds: {
@@ -101,7 +101,7 @@ router
       res.json({
         success: true,
         data: {
-          id: result.twitchId,
+          id: result.channelId,
           username: result.username,
           enabled: result.enabled,
           registered_at: result.registeredAt,
@@ -119,9 +119,9 @@ router
     try {
       const parsedBody = bodyValidator.parse(req.body);
 
-      const existing = await db.twitch.findUnique({
+      const existing = await db.channel.findUnique({
         where: {
-          twitchId: id,
+          channelId: id,
         },
       });
 
@@ -131,15 +131,15 @@ router
           message: "This Twitch channel isn't registered with us.",
         });
       } else {
-        const result = await db.twitch.update({
-          where: {
-            twitchId: id,
-          },
+        const result = await db.channel.update({
           data: {
             enabled: parsedBody.enabled ?? !existing.enabled,
           },
+          where: {
+            channelId: id,
+          },
           select: {
-            twitchId: true,
+            channelId: true,
             username: true,
             registeredAt: true,
             enabled: true,
@@ -153,7 +153,7 @@ router
         res.json({
           success: true,
           data: {
-            id: result.twitchId,
+            id: result.channelId,
             username: result.username,
             enabled: result.enabled,
             registered_at: result.registeredAt,
@@ -179,9 +179,9 @@ router
   })
   .delete(async (req, res) => {
     const { id } = req.params;
-    const result = await db.twitch.delete({
+      const result = await db.channel.delete({
       where: {
-        twitchId: id,
+          channelId: id,
       },
     });
     if (result === null) {

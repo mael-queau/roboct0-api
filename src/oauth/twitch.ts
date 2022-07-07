@@ -1,4 +1,4 @@
-import { PrismaClient, Twitch } from "@prisma/client";
+import { PrismaClient, Channel } from "@prisma/client";
 import { Router } from "express";
 import { z, ZodError } from "zod";
 import { createState, deleteState, getUserInfo } from "./helper";
@@ -51,9 +51,9 @@ router.get("/twitch/callback", async (req, res) => {
         parsedQuery.code
       );
       const userInfo = await getUserInfo(access_token);
-      await db.twitch.upsert({
+      await db.channel.upsert({
         create: {
-          twitchId: userInfo.id,
+          channelId: userInfo.id,
           username: userInfo.login,
           token: access_token,
           refreshToken: refresh_token,
@@ -64,7 +64,7 @@ router.get("/twitch/callback", async (req, res) => {
           refreshToken: refresh_token,
         },
         where: {
-          twitchId: userInfo.id,
+          channelId: userInfo.id,
         },
       });
 
@@ -140,7 +140,7 @@ async function getAccessToken(code: string) {
  * @param channel A Prisma Channel object (containing token information for a specific user)
  * @returns An updated version of that Prisma Channel object, with the updated token information
  */
-export async function refreshToken(channel: Twitch): Promise<Twitch> {
+export async function refreshToken(channel: Channel): Promise<Channel> {
   const parameters = new URLSearchParams();
   parameters.append("client_id", process.env.TWITCH_ID!);
   parameters.append("client_secret", process.env.TWITCH_SECRET!);
@@ -164,7 +164,7 @@ export async function refreshToken(channel: Twitch): Promise<Twitch> {
 
     const { access_token, refresh_token } = dataValidator.parse(data);
 
-    const result = await db.twitch.update({
+    const result = await db.channel.update({
       data: {
         lastRefresh: new Date(),
         token: access_token,
@@ -182,7 +182,7 @@ export async function refreshToken(channel: Twitch): Promise<Twitch> {
     console.log(`❌ Failed to refresh token for ${channel.username}`.red);
     // if node is in dev mode
     if (process.env.NODE_ENV !== "development") {
-      const newChannel = await db.twitch.update({
+      const newChannel = await db.channel.update({
         where: {
           id: channel.id,
         },
@@ -199,14 +199,14 @@ export async function refreshToken(channel: Twitch): Promise<Twitch> {
  * Verify all the active tokens from the database and returns a list of channels that need to be refreshed.
  * @returns A list of channels that need to be refreshed.
  */
-export async function verifyTokens(): Promise<Twitch[]> {
-  const channels = await db.twitch.findMany({
+export async function verifyTokens(): Promise<Channel[]> {
+  const channels = await db.channel.findMany({
     where: { enabled: true },
   });
 
   console.log(`Verifying ${channels.length} enabled channels...`);
 
-  const invalidTokens: Twitch[] = [];
+  const invalidTokens: Channel[] = [];
 
   for (const channel of channels) {
     try {
