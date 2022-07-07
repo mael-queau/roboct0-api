@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+import { Request, Router } from "express";
+import { CustomResponse } from "./helper";
 import { z, ZodError } from "zod";
 
 const router = Router();
@@ -7,6 +9,13 @@ export default router;
 
 const db = new PrismaClient();
 
+/**
+ * Get a list of channels.
+ * Query parameters:
+ * - search: string - Search for channels by name. (optional)
+ * - limit: number - Limit the number of channels returned. Default: 10. (optional)
+ * - skip: number - Skip the first n channels. Default: 0. (optional)
+ */
 router.get("/channels", async (req: Request, res: CustomResponse) => {
   const queryValidator = z.object({
     search: z.string().optional(),
@@ -30,6 +39,8 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
 
   try {
     const parsedQuery = queryValidator.parse(req.query);
+
+    // Order by number of guilds that have added the channel.
     const results = await db.channel.findMany({
       select: {
         channelId: true,
@@ -55,16 +66,17 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
       take: parsedQuery.limit,
       skip: parsedQuery.skip,
     });
+
     res.json({
       success: true,
-      results: results,
+      data: results,
     });
   } catch (e) {
     if (e instanceof ZodError) {
       res.status(400).json({
         success: false,
         message: "The query parameters are invalid.",
-        detail: e.format(),
+        data: e.format(),
       });
     } else {
       console.error(e);
@@ -78,7 +90,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
 
 router
   .route("/channels/:id")
-  .get(async (req, res) => {
+  .get(async (req: Request, res: CustomResponse) => {
     const { id } = req.params;
     const result = await db.channel.findUnique({
       where: {
@@ -110,7 +122,7 @@ router
       });
     }
   })
-  .patch(async (req, res) => {
+  .patch(async (req: Request, res: CustomResponse) => {
     const { id } = req.params;
     const bodyValidator = z.object({
       enabled: z.boolean().optional(),
@@ -166,7 +178,7 @@ router
         res.status(400).json({
           success: false,
           message: "The query parameters are invalid.",
-          detail: e.format(),
+          data: e.format(),
         });
       } else {
         console.error(e);
@@ -177,25 +189,25 @@ router
       }
     }
   })
-  .delete(async (req, res) => {
+  .delete(async (req: Request, res: CustomResponse) => {
     const { id } = req.params;
     try {
       const result = await db.channel.delete({
-      where: {
+        where: {
           channelId: id,
-      },
-    });
-    if (result === null) {
-      res.status(404).json({
-        success: false,
-        message: "This Twitch channel isn't registered with us.",
+        },
       });
-    } else {
-      res.json({
-        success: true,
-        message: "The Twitch channel was successfully deleted.",
-      });
-    }
+      if (result === null) {
+        res.status(404).json({
+          success: false,
+          message: "This Twitch channel isn't registered with us.",
+        });
+      } else {
+        res.json({
+          success: true,
+          message: "The Twitch channel was successfully deleted.",
+        });
+      }
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
         res.status(404).json({
