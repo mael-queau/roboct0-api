@@ -7,7 +7,7 @@ import { z, ZodError } from "zod";
 const router = Router();
 export default router;
 
-const db = new PrismaClient();
+const prisma = new PrismaClient();
 
 /**
  * Get a list of channels.
@@ -41,7 +41,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
     const parsedQuery = queryValidator.parse(req.query);
 
     // Order by number of guilds that have added the channel.
-    const results = await db.channel.findMany({
+    const results = await prisma.channel.findMany({
       select: {
         channelId: true,
         username: true,
@@ -92,7 +92,7 @@ router
   .route("/channels/:id")
   .get(async (req: Request, res: CustomResponse) => {
     const { id } = req.params;
-    const result = await db.channel.findUnique({
+    const result = await prisma.channel.findUnique({
       where: {
         channelId: id,
       },
@@ -131,7 +131,7 @@ router
     try {
       const parsedBody = bodyValidator.parse(req.body);
 
-      const existing = await db.channel.findUnique({
+      const existing = await prisma.channel.findUnique({
         where: {
           channelId: id,
         },
@@ -143,7 +143,7 @@ router
           message: "This Twitch channel isn't registered with us.",
         });
       } else {
-        const result = await db.channel.update({
+        const result = await prisma.channel.update({
           data: {
             enabled: parsedBody.enabled ?? !existing.enabled,
           },
@@ -192,7 +192,7 @@ router
   .delete(async (req: Request, res: CustomResponse) => {
     const { id } = req.params;
     try {
-      const result = await db.channel.delete({
+      const result = await prisma.channel.delete({
         where: {
           channelId: id,
         },

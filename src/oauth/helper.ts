@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import { PrismaClient, State } from "@prisma/client";
 
-const db = new PrismaClient();
+const prisma = new PrismaClient();
 
 /**
  * Creates a state and adds it to the database.
@@ -10,7 +10,7 @@ const db = new PrismaClient();
  */
 export async function createState(): Promise<string> {
   const state = crypto.randomBytes(20).toString("hex");
-  await db.state
+  await prisma.state
     .create({
       data: { value: state },
       select: { value: true },
@@ -28,7 +28,7 @@ export async function createState(): Promise<string> {
  */
 export async function deleteState(state: State | string): Promise<void> {
   let stateString = typeof state === "string" ? state : state.value;
-  await db.state
+  await prisma.state
     .delete({
       where: {
         value: stateString,

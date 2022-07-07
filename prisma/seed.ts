@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 seed();
 
 async function seed() {
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 10; i++) {
     await prisma.channel.create({
       data: {
         channelId: generateNumericId(9),
@@ -19,7 +19,7 @@ async function seed() {
     });
   }
 
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 10; i++) {
     await prisma.guild.create({
       data: {
         guildId: generateNumericId(18),
@@ -32,25 +32,27 @@ async function seed() {
   }
 
   for (let i = 0; i < 10; i++) {
-    const [c] = await prisma.$queryRaw<
+    const c = await prisma.$queryRaw<
       Channel[]
     >`SELECT * FROM "Channel" ORDER BY RANDOM() LIMIT 1`;
 
-    await prisma.channel.update({
-      where: {
-        channelId: c.channelId,
+    const q = await prisma.quote.findFirst({
+      orderBy: {
+        quoteId: "desc",
       },
-      data: {
-        quoteIndex: c.quoteIndex + 1,
+      where: {
+        channelId: c[0].channelId,
       },
     });
 
+    const id = q ? q.quoteId + 1 : 1;
+
     await prisma.quote.create({
       data: {
-        quoteId: c.quoteIndex,
+        quoteId: id,
         content: faker.lorem.sentence(),
         date: faker.date.past(),
-        channelId: c.id,
+        channelId: c[0].channelId,
         enabled: faker.datatype.boolean(),
       },
     });

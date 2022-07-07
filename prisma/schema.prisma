@@ -26,7 +26,6 @@ model Channel {
   lastRefresh  DateTime @default(now())
   registeredAt DateTime @default(now())
   enabled      Boolean  @default(true)
-  quoteIndex   Int      @default(1)
   guilds       Guild[]
   quotes       Quote[]
 
@@ -54,6 +53,8 @@ model Quote {
   content   String
   date      DateTime @default(now())
   enabled   Boolean  @default(true)
-  channel   Channel  @relation(fields: [channelId], references: [id])
-  channelId Int
+  channel   Channel  @relation(fields: [channelId], references: [channelId])
+  channelId String
+
+  @@unique([channelId, quoteId])
 }

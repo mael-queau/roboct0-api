@@ -4,7 +4,7 @@ import { z, ZodError } from "zod";
 import { createState, deleteState, getUserInfo } from "./helper";
 
 export const router = Router();
-const db = new PrismaClient();
+const prisma = new PrismaClient();
 
 router.get("/twitch", async (_req, res) => {
   const state = await createState();
@@ -35,7 +35,7 @@ router.get("/twitch/callback", async (req, res) => {
   try {
     const parsedQuery = queryValidator.parse(req.query);
 
-    const state = await db.state.findUnique({
+    const state = await prisma.state.findUnique({
       where: {
         value: parsedQuery.state,
       },
@@ -51,7 +51,7 @@ router.get("/twitch/callback", async (req, res) => {
         parsedQuery.code
       );
       const userInfo = await getUserInfo(access_token);
-      await db.channel.upsert({
+      await prisma.channel.upsert({
         create: {
           channelId: userInfo.id,
           username: userInfo.login,
@@ -164,7 +164,7 @@ export async function refreshToken(channel: Channel): Promise<Channel> {
 
     const { access_token, refresh_token } = dataValidator.parse(data);
 
-    const result = await db.channel.update({
+    const result = await prisma.channel.update({
       data: {
         lastRefresh: new Date(),
         token: access_token,
@@ -182,7 +182,7 @@ export async function refreshToken(channel: Channel): Promise<Channel> {
     console.log(`❌ Failed to refresh token for ${channel.username}`.red);
     // if node is in dev mode
     if (process.env.NODE_ENV !== "development") {
-      const newChannel = await db.channel.update({
+      const newChannel = await prisma.channel.update({
         where: {
           id: channel.id,
         },
@@ -200,7 +200,7 @@ export async function refreshToken(channel: Channel): Promise<Channel> {
  * @returns A list of channels that need to be refreshed.
  */
 export async function verifyTokens(): Promise<Channel[]> {
-  const channels = await db.channel.findMany({
+  const channels = await prisma.channel.findMany({
     where: { enabled: true },
   });
 

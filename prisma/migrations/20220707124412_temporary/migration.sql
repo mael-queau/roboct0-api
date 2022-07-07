@@ -16,7 +16,6 @@ CREATE TABLE "Channel" (
     "lastRefresh" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "registeredAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "enabled" BOOLEAN NOT NULL DEFAULT true,
-    "quoteIndex" INTEGER NOT NULL DEFAULT 1,
 
     CONSTRAINT "Channel_pkey" PRIMARY KEY ("id")
 );
@@ -41,7 +40,7 @@ CREATE TABLE "Quote" (
     "content" TEXT NOT NULL,
     "date" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "enabled" BOOLEAN NOT NULL DEFAULT true,
-    "channelId" INTEGER NOT NULL,
+    "channelId" TEXT NOT NULL,
 
     CONSTRAINT "Quote_pkey" PRIMARY KEY ("id")
 );
@@ -59,13 +58,16 @@ CREATE UNIQUE INDEX "Channel_channelId_key" ON "Channel"("channelId");
 CREATE UNIQUE INDEX "Guild_guildId_key" ON "Guild"("guildId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Quote_channelId_quoteId_key" ON "Quote"("channelId", "quoteId");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "_ChannelToGuild_AB_unique" ON "_ChannelToGuild"("A", "B");
 
 -- CreateIndex
 CREATE INDEX "_ChannelToGuild_B_index" ON "_ChannelToGuild"("B");
 
 -- AddForeignKey
-ALTER TABLE "Quote" ADD CONSTRAINT "Quote_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "Channel"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "Quote" ADD CONSTRAINT "Quote_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "Channel"("channelId") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_ChannelToGuild" ADD CONSTRAINT "_ChannelToGuild_A_fkey" FOREIGN KEY ("A") REFERENCES "Channel"("id") ON DELETE CASCADE ON UPDATE CASCADE;

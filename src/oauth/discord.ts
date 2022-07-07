@@ -4,7 +4,7 @@ import { z, ZodError } from "zod";
 import { createState, deleteState } from "./helper";
 
 export const router = Router();
-const db = new PrismaClient();
+const prisma = new PrismaClient();
 
 router.get("/discord", async (_req, res) => {
   const state = await createState();
@@ -32,7 +32,7 @@ router.get("/discord/callback", async (req, res) => {
   try {
     const parsedQuery = queryValidator.parse(req.query);
 
-    const state = await db.state.findUnique({
+    const state = await prisma.state.findUnique({
       where: {
         value: parsedQuery.state,
       },
@@ -48,7 +48,7 @@ router.get("/discord/callback", async (req, res) => {
         parsedQuery.code
       );
 
-      await db.guild.upsert({
+      await prisma.guild.upsert({
         create: {
           guildId: parsedQuery.guild_id,
           token: access_token,
