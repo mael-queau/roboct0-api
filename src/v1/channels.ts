@@ -7,7 +7,7 @@ export default router;
 
 const db = new PrismaClient();
 
-router.get("", async (req, res) => {
+router.get("/channels", async (req: Request, res: CustomResponse) => {
   const queryValidator = z.object({
     search: z.string().optional(),
     limit: z
@@ -77,7 +77,7 @@ router.get("", async (req, res) => {
 });
 
 router
-  .route("/:id")
+  .route("/channels/:id")
   .get(async (req, res) => {
     const { id } = req.params;
     const result = await db.channel.findUnique({
