@@ -9,30 +9,15 @@ export default router;
 
 const prisma = new PrismaClient();
 
-/**
- * Get a list of channels.
- * Query parameters:
- * - search: string - Search for channels by name. (optional)
- * - limit: number - Limit the number of channels returned. Default: 10. (optional)
- * - skip: number - Skip the first n channels. Default: 0. (optional)
- */
 router.get("/channels", async (req: Request, res: CustomResponse) => {
   const queryValidator = z.object({
     search: z.string().optional(),
-    limit: z
-      .string()
-      .default("10")
-      .refine(
-        (s) => /^[0-9]+$/.test(s) && parseInt(s) <= 100 && parseInt(s) >= 1,
-        "Limit must be a number between 1 and 100"
-      )
-      .transform((s) => parseInt(s)),
-    skip: z
+    page: z
       .string()
       .default("0")
       .refine(
         (s) => /^[0-9]+$/.test(s) && parseInt(s) >= 0,
-        "Skip must be a positive number"
+        "Page must be a positive integer"
       )
       .transform((s) => parseInt(s)),
   });
@@ -63,8 +48,8 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
           _count: "desc",
         },
       },
-      take: parsedQuery.limit,
-      skip: parsedQuery.skip,
+      take: 10,
+      skip: 10 * parsedQuery.page,
     });
 
     res.json({
@@ -89,36 +74,46 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
 });
 
 router
-  .route("/channels/:id")
+  .route("/channels/:channelId")
   .get(async (req: Request, res: CustomResponse) => {
+    if (!req.params.channelId.match(/^[0-9]+$/)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid channel ID.",
+      });
+      return;
+    }
+
+    const { channelId } = req.params;
+
     try {
-    const result = await prisma.channel.findUnique({
-      where: {
-        channelId: id,
-      },
-      include: {
-        guilds: {
-          select: {
-            _count: true,
+      const result = await prisma.channel.findUnique({
+        where: {
+          channelId,
+        },
+        include: {
+          guilds: {
+            select: {
+              _count: true,
+            },
           },
         },
-      },
-    });
-    if (result === null) {
-      res.status(404).json({
-        success: false,
-        message: "This Twitch channel isn't registered with us.",
       });
-    } else {
-      res.json({
-        success: true,
-        data: {
-          id: result.channelId,
-          username: result.username,
-          enabled: result.enabled,
-          registered_at: result.registeredAt,
-          guild_count: result.guilds.length,
-        },
+      if (result === null) {
+        res.status(404).json({
+          success: false,
+          message: "This Twitch channel isn't registered with us.",
+        });
+      } else {
+        res.json({
+          success: true,
+          data: {
+            id: result.channelId,
+            username: result.username,
+            enabled: result.enabled,
+            registered_at: result.registeredAt,
+            guild_count: result.guilds.length,
+          },
         });
       }
     } catch (e) {
@@ -130,7 +125,16 @@ router
     }
   })
   .patch(async (req: Request, res: CustomResponse) => {
-    const { id } = req.params;
+    if (!req.params.channelId.match(/^[0-9]+$/)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid channel ID.",
+      });
+      return;
+    }
+
+    const { channelId } = req.params;
+
     const bodyValidator = z.object({
       enabled: z.boolean().optional(),
     });
@@ -140,7 +144,7 @@ router
 
       const existing = await prisma.channel.findUnique({
         where: {
-          channelId: id,
+          channelId,
         },
       });
 
@@ -155,7 +159,7 @@ router
             enabled: parsedBody.enabled ?? !existing.enabled,
           },
           where: {
-            channelId: id,
+            channelId,
           },
           select: {
             channelId: true,
@@ -197,11 +201,20 @@ router
     }
   })
   .delete(async (req: Request, res: CustomResponse) => {
-    const { id } = req.params;
+    if (!req.params.channelId.match(/^[0-9]+$/)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid channel ID.",
+      });
+      return;
+    }
+
+    const { channelId } = req.params;
+
     try {
       const result = await prisma.channel.delete({
         where: {
-          channelId: id,
+          channelId,
         },
       });
       if (result === null) {
