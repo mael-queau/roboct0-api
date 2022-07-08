@@ -96,7 +96,7 @@ router.get("/twitch/callback", async (req, res) => {
     } else {
       res.status(500).json({
         success: false,
-        message: "An unknown error occurred.",
+        message: "Internal server error.",
       });
     }
   }

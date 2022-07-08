@@ -82,7 +82,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
       console.error(e);
       res.status(500).json({
         success: false,
-        message: "An unexpected error occurred.",
+        message: "Internal server error.",
       });
     }
   }
@@ -91,7 +91,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
 router
   .route("/channels/:id")
   .get(async (req: Request, res: CustomResponse) => {
-    const { id } = req.params;
+    try {
     const result = await prisma.channel.findUnique({
       where: {
         channelId: id,
@@ -119,6 +119,13 @@ router
           registered_at: result.registeredAt,
           guild_count: result.guilds.length,
         },
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      res.status(500).json({
+        success: false,
+        message: "Internal server error.",
       });
     }
   })
@@ -184,7 +191,7 @@ router
         console.error(e);
         res.status(500).json({
           success: false,
-          message: "An unexpected error occurred.",
+          message: "Internal server error.",
         });
       }
     }
@@ -218,7 +225,7 @@ router
         console.error(e);
         res.status(500).json({
           success: false,
-          message: "An unexpected error occurred.",
+          message: "Internal server error.",
         });
       }
     }
