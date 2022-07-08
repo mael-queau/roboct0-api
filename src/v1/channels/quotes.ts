@@ -1,5 +1,5 @@
 import { Router, Request } from "express";
-import { CustomResponse } from "./helper";
+import { CustomResponse } from "../helper";
 import { PrismaClient, Quote } from "@prisma/client";
 import { z, ZodError } from "zod";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";

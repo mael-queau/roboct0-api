@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
 import { Request, Router } from "express";
-import { CustomResponse } from "./helper";
+import { CustomResponse } from "../helper";
 import { z, ZodError } from "zod";
 
 const router = Router();
