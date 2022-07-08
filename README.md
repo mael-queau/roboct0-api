@@ -21,13 +21,14 @@
         - [ ] `>/:userId`
           - [ ] `>/balance`
       - [ ] `>/quotes`
-        - [ ] `GET` - List, random, or search
-        - [ ] `POST`
-        - [ ] `>/:quoteId`
-          - [ ] `GET`
-          - [ ] `PUT` - Edit content
-          - [ ] `PATCH` - Toggle
-          - [ ] `DELETE`
+        - [x] `GET` - List or search
+        - [x] `GET` - Random
+        - [x] `POST`
+        - [x] `>/:quoteId`
+          - [x] `GET`
+          - [x] `PUT` - Edit content
+          - [x] `PATCH` - Toggle
+          - [x] `DELETE`
       - [ ] `>/suggestions`
         - [ ] `>/:suggestionId`
       - [ ] `>/loveCounters`
