@@ -26,6 +26,7 @@ model Channel {
   lastRefresh  DateTime @default(now())
   registeredAt DateTime @default(now())
   enabled      Boolean  @default(true)
+  quoteIndex   Int      @default(0)
   guilds       Guild[]
   quotes       Quote[]
 
