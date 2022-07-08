@@ -143,6 +143,9 @@ router
       const parsedBody = bodyValidator.parse(req.body);
 
       const existing = await prisma.channel.findUnique({
+        select: {
+          enabled: true,
+        },
         where: {
           channelId,
         },
@@ -212,22 +215,16 @@ router
     const { channelId } = req.params;
 
     try {
-      const result = await prisma.channel.delete({
+      await prisma.channel.delete({
         where: {
           channelId,
         },
       });
-      if (result === null) {
-        res.status(404).json({
-          success: false,
-          message: "This Twitch channel isn't registered with us.",
-        });
-      } else {
-        res.json({
-          success: true,
-          message: "The Twitch channel was successfully deleted.",
-        });
-      }
+
+      res.json({
+        success: true,
+        message: "The Twitch channel was successfully deleted.",
+      });
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
         res.status(404).json({
