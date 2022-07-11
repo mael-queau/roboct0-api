@@ -1,7 +1,7 @@
 import { PrismaClient, Channel } from "@prisma/client";
 import { Router } from "express";
 import { z, ZodError } from "zod";
-import { createState, deleteState, getUserInfo } from "./helper";
+import { createState, deleteState } from "./helper";
 
 export const router = Router();
 const prisma = new PrismaClient();
@@ -68,7 +68,7 @@ router.get("/twitch/callback", async (req, res) => {
         },
       });
 
-      await deleteState(state);
+      await deleteState(state.value);
 
       console.log(
         `🎉 ${userInfo.login} just linked their Twitch account.`.blue
@@ -232,4 +232,26 @@ export async function verifyTokens(): Promise<Channel[]> {
   console.log(`${invalidTokens.length} channels need to be refreshed.`);
 
   return invalidTokens;
+}
+
+/**
+ * Retrieves user information from the Twitch api from the given access token.
+ * @param token The access token to use.
+ * @returns The user information.
+ */
+export async function getUserInfo(token: string) {
+  const response = await fetch("https://api.twitch.tv/helix/users", {
+    headers: {
+      "Authorization": `Bearer ${token}`,
+      "Client-Id": process.env.TWITCH_ID!,
+    },
+  });
+  if (!response.ok) {
+    throw new Error("Failed to get user info.");
+  }
+  const { data } = await response.json();
+  return {
+    id: data[0].id,
+    login: data[0].login,
+  };
 }

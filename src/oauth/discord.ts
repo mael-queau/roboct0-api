@@ -72,7 +72,7 @@ router.get("/discord/callback", async (req, res) => {
       });
 
       // Delete the state token.
-      await deleteState(state);
+      await deleteState(state.value);
 
       console.log(
         `🎉 The guild ${parsedQuery.guild_id} has been registered.`.blue

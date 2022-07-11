@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { PrismaClient, State } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -9,53 +9,24 @@ const prisma = new PrismaClient();
  * @returns A newly created state.
  */
 export async function createState(): Promise<string> {
+  // Create a random string of characters to use as a state.
   const state = crypto.randomBytes(20).toString("hex");
-  await prisma.state
-    .create({
-      data: { value: state },
-      select: { value: true },
-    })
-    .catch((e) => {
-      throw e;
-    });
+  await prisma.state.create({
+    data: { value: state },
+    select: { value: true },
+  });
   return state;
 }
 
 /**
  * Deletes a state from the database
  * @description When using OAuth2 states, they need to be destroyed after having been used so as not to have collisions.
- * @param state The state string, or Prisma State object, to delete.
+ * @param state The state string, to delete.
  */
-export async function deleteState(state: State | string): Promise<void> {
-  let stateString = typeof state === "string" ? state : state.value;
-  await prisma.state
-    .delete({
-      where: {
-        value: stateString,
-      },
-    })
-    .catch((e) => {
-      throw e;
-    });
-}
-
-export async function getUserInfo(token: string) {
-  try {
-    const response = await fetch("https://api.twitch.tv/helix/users", {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Client-Id": process.env.TWITCH_ID!,
-      },
-    });
-    if (!response.ok) {
-      throw new Error("Failed to get user info.");
-    }
-    const { data } = await response.json();
-    return {
-      id: data[0].id,
-      login: data[0].login,
-    };
-  } catch (e) {
-    throw e;
-  }
+export async function deleteState(state: string): Promise<void> {
+  await prisma.state.delete({
+    where: {
+      value: state,
+    },
+  });
 }
