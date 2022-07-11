@@ -56,7 +56,6 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
           _count: "desc",
         },
       },
-      // Limit the number of results to 10 per page.
       take: 10,
       // Skip as many results as needed to get to the page number.
       skip: 10 * (parsedQuery.page - 1),
@@ -68,7 +67,6 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
     });
   } catch (e) {
     if (e instanceof ZodError) {
-      // If the query parameters are invalid, return an error.
       res.status(400).json({
         success: false,
         message: "The query parameters are invalid.",
@@ -85,10 +83,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
 
 router
   .route("/channels/:channelId")
-  .get(async (req: Request, res: CustomResponse) => {
-    // Get a channel by its ID
-
-    // Channel IDs must be numeric.
+  .all(async (req: Request, res: CustomResponse, next) => {
     if (!req.params.channelId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,
@@ -96,6 +91,10 @@ router
       });
       return;
     }
+    next();
+  })
+  .get(async (req: Request, res: CustomResponse) => {
+    // Get a channel by its ID
 
     const { channelId } = req.params;
 
@@ -114,7 +113,6 @@ router
       });
 
       if (result === null) {
-        // If the channel doesn't exist, return a 404.
         res.status(404).json({
           success: false,
           message: "This Twitch channel isn't registered with us.",
@@ -144,15 +142,6 @@ router
     // Query parameters:
     // - enabled: boolean - Whether the channel should be enabled or disabled (optional).
 
-    // Channel IDs must be numeric.
-    if (!req.params.channelId.match(/^[0-9]+$/)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid channel ID.",
-      });
-      return;
-    }
-
     const { channelId } = req.params;
 
     try {
@@ -173,7 +162,6 @@ router
       });
 
       if (existing === null) {
-        // If the channel doesn't exist, return a 404.
         res.status(404).json({
           success: false,
           message: "This Twitch channel isn't registered with us.",
@@ -183,9 +171,6 @@ router
           data: {
             // Either use the value from the request body, or invert the existing value.
             enabled: parsedBody.enabled ?? !existing.enabled,
-          },
-          where: {
-            channelId,
           },
           select: {
             channelId: true,
@@ -197,6 +182,9 @@ router
                 guildId: true,
               },
             },
+          },
+          where: {
+            channelId,
           },
         });
 
@@ -213,7 +201,6 @@ router
       }
     } catch (e) {
       if (e instanceof ZodError) {
-        // If the query parameters are invalid, return an error.
         res.status(400).json({
           success: false,
           message: "The query parameters are invalid.",
@@ -230,15 +217,6 @@ router
   .delete(async (req: Request, res: CustomResponse) => {
     // Delete a channel
 
-    // Channel IDs must be numeric.
-    if (!req.params.channelId.match(/^[0-9]+$/)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid channel ID.",
-      });
-      return;
-    }
-
     const { channelId } = req.params;
 
     try {
@@ -254,7 +232,6 @@ router
       });
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-        // If the channel doesn't exist, return a 404.
         res.status(404).json({
           success: false,
           message: "This Twitch channel isn't registered with us.",

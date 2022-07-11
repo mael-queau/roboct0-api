@@ -14,11 +14,10 @@ router.get(
   async (req: Request, res: CustomResponse) => {
     // Get a random quote from a channel.
 
-    // Channel ID must be numeric.
     if (!req.params.channelId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,
-        message: "The channel ID must be a number.",
+        message: "Invalid channel ID.",
       });
       return;
     }
@@ -41,7 +40,7 @@ router.get(
         return;
       }
 
-      // Since Prisma doesn't allow to randomly select a quote, we have to do it manually.
+      // Since Prisma doesn't allow to randomly select a row, we have to do it manually.
       const result = await prisma.$queryRaw<
         Quote[]
       >`SELECT "quoteId", "content", "date" FROM "Quote" WHERE "channelId" = ${channelId} AND "enabled" = true ORDER BY RANDOM() LIMIT 1`;
@@ -70,21 +69,22 @@ router.get(
 
 router
   .route("/channels/:channelId/quotes")
+  .all(async (req: Request, res: CustomResponse, next) => {
+    if (!req.params.channelId.match(/^[0-9]+$/)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid channel ID.",
+      });
+      return;
+    }
+    next();
+  })
   .get(async (req: Request, res: CustomResponse) => {
     // List quotes from a channel.
     // Query parameters:
     // - search: string - Search for quotes containing this string.
     // - page: number - The page number.
     // - include_disabled: boolean - Whether to include disabled quotes.
-
-    // Channel IDs must be numeric.
-    if (!req.params.channelId.match(/^[0-9]+$/)) {
-      res.status(400).json({
-        success: false,
-        message: "The channel ID must be a number.",
-      });
-      return;
-    }
 
     const { channelId } = req.params;
 
@@ -160,15 +160,6 @@ router
     // Body parameters:
     // - content: string - The quote content.
 
-    // Channel IDs must be numeric.
-    if (!req.params.channelId.match(/^[0-9]+$/)) {
-      res.status(400).json({
-        success: false,
-        message: "The channel ID must be a number.",
-      });
-      return;
-    }
-
     const { channelId } = req.params;
 
     try {
@@ -233,26 +224,25 @@ router
 
 router
   .route("/channels/:channelId/quotes/:quoteId")
-  .get(async (req: Request, res: CustomResponse) => {
-    // Get a quote.
-
-    // Channel IDs must be numeric.
+  .all(async (req: Request, res: CustomResponse, next) => {
     if (!req.params.channelId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,
-        message: "The channel ID must be a number.",
+        message: "Invalid channel ID.",
       });
       return;
     }
-
-    // Quote IDs must be numeric.
     if (!req.params.quoteId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,
-        message: "The quote ID must be a number.",
+        message: "Invalid quote ID.",
       });
       return;
     }
+    next();
+  })
+  .get(async (req: Request, res: CustomResponse) => {
+    // Get a quote.
 
     const { channelId, quoteId } = req.params;
 
@@ -297,24 +287,6 @@ router
     // Body parameters:
     // - content: string - The new content (optional).
     // - date: string - The new date (optional).
-
-    // Channel IDs must be numeric.
-    if (!req.params.channelId.match(/^[0-9]+$/)) {
-      res.status(400).json({
-        success: false,
-        message: "The channel ID must be a number.",
-      });
-      return;
-    }
-
-    // Quote IDs must be numeric.
-    if (!req.params.quoteId.match(/^[0-9]+$/)) {
-      res.status(400).json({
-        success: false,
-        message: "The quote ID must be a number.",
-      });
-      return;
-    }
 
     const { channelId, quoteId } = req.params;
 
@@ -417,24 +389,6 @@ router
     // Body parameters:
     // - enabled: boolean - The new enabled value (optional).
 
-    // Channel IDs must be numeric.
-    if (!req.params.channelId.match(/^[0-9]+$/)) {
-      res.status(400).json({
-        success: false,
-        message: "The channel ID must be a number.",
-      });
-      return;
-    }
-
-    // Quote IDs must be numeric.
-    if (!req.params.quoteId.match(/^[0-9]+$/)) {
-      res.status(400).json({
-        success: false,
-        message: "The quote ID must be a number.",
-      });
-      return;
-    }
-
     const { channelId, quoteId } = req.params;
 
     try {
@@ -504,24 +458,6 @@ router
   })
   .delete(async (req: Request, res: CustomResponse) => {
     // Delete a quote.
-
-    // Channel IDs must be numeric.
-    if (!req.params.channelId.match(/^[0-9]+$/)) {
-      res.status(400).json({
-        success: false,
-        message: "The channel ID must be a number.",
-      });
-      return;
-    }
-
-    // Quote IDs must be numeric.
-    if (!req.params.quoteId.match(/^[0-9]+$/)) {
-      res.status(400).json({
-        success: false,
-        message: "The quote ID must be a number.",
-      });
-      return;
-    }
 
     const { channelId, quoteId } = req.params;
 
