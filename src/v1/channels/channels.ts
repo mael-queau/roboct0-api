@@ -14,9 +14,9 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
     search: z.string().optional(),
     page: z
       .string()
-      .default("0")
+      .default("1")
       .refine(
-        (s) => /^[0-9]+$/.test(s) && parseInt(s) >= 0,
+        (s) => /^[0-9]+$/.test(s) && parseInt(s) > 0,
         "Page must be a positive integer"
       )
       .transform((s) => parseInt(s)),
@@ -49,7 +49,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
         },
       },
       take: 10,
-      skip: 10 * parsedQuery.page,
+      skip: 10 * (parsedQuery.page - 1),
     });
 
     res.json({
