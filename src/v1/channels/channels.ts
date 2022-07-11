@@ -1,8 +1,8 @@
+import { Request, Router } from "express";
+import { z, ZodError } from "zod";
 import { PrismaClient } from "@prisma/client";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
-import { Request, Router } from "express";
 import { CustomResponse } from "../helper";
-import { z, ZodError } from "zod";
 
 const router = Router();
 export default router;
@@ -10,22 +10,26 @@ export default router;
 const prisma = new PrismaClient();
 
 router.get("/channels", async (req: Request, res: CustomResponse) => {
-  const queryValidator = z.object({
-    search: z.string().optional(),
-    page: z
-      .string()
-      .default("1")
-      .refine(
-        (s) => /^[0-9]+$/.test(s) && parseInt(s) > 0,
-        "Page must be a positive integer"
-      )
-      .transform((s) => parseInt(s)),
-  });
-
+  // Get a list of registered channels
+  // Query parameters:
+  // - search: string - Search for channels by name.
+  // - page: number - The page number.
+  // - includeDisabled: boolean - Include disabled channels.
   try {
+    const queryValidator = z.object({
+      search: z.string().optional(),
+      page: z
+        .string()
+        .default("1")
+        .refine(
+          (s) => /^[0-9]+$/.test(s) && parseInt(s) > 0,
+          "Page must be a positive integer"
+        )
+        .transform((s) => parseInt(s)),
+      includeDisabled: z.boolean().default(false),
+    });
     const parsedQuery = queryValidator.parse(req.query);
 
-    // Order by number of guilds that have added the channel.
     const results = await prisma.channel.findMany({
       select: {
         channelId: true,
@@ -38,17 +42,22 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
         },
       },
       where: {
-        enabled: true,
+        // If includeDisabled is true, don't filter by enabled.
+        enabled: parsedQuery.includeDisabled ? true : undefined,
+        // If search is set, search for channels by name (an empty string will search for all channels).
         username: {
           contains: parsedQuery.search,
         },
       },
       orderBy: {
+        // Order by number of guilds that have added the channel.
         guilds: {
           _count: "desc",
         },
       },
+      // Limit the number of results to 10 per page.
       take: 10,
+      // Skip as many results as needed to get to the page number.
       skip: 10 * (parsedQuery.page - 1),
     });
 
@@ -58,10 +67,10 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
     });
   } catch (e) {
     if (e instanceof ZodError) {
+      // If the query parameters are invalid, return an error.
       res.status(400).json({
         success: false,
         message: "The query parameters are invalid.",
-        data: e.format(),
       });
     } else {
       console.error(e);
@@ -76,6 +85,9 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
 router
   .route("/channels/:channelId")
   .get(async (req: Request, res: CustomResponse) => {
+    // Get a channel by its ID
+
+    // Channel IDs must be numeric.
     if (!req.params.channelId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,
@@ -99,7 +111,9 @@ router
           },
         },
       });
+
       if (result === null) {
+        // If the channel doesn't exist, return a 404.
         res.status(404).json({
           success: false,
           message: "This Twitch channel isn't registered with us.",
@@ -125,6 +139,11 @@ router
     }
   })
   .patch(async (req: Request, res: CustomResponse) => {
+    // Toggle a channel
+    // Query parameters:
+    // - enabled: boolean - Whether the channel should be enabled or disabled (optional).
+
+    // Channel IDs must be numeric.
     if (!req.params.channelId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,
@@ -135,13 +154,14 @@ router
 
     const { channelId } = req.params;
 
-    const bodyValidator = z.object({
-      enabled: z.boolean().optional(),
-    });
-
     try {
+      const bodyValidator = z.object({
+        enabled: z.boolean().optional(),
+      });
+
       const parsedBody = bodyValidator.parse(req.body);
 
+      // Get the channel's current status.
       const existing = await prisma.channel.findUnique({
         select: {
           enabled: true,
@@ -152,6 +172,7 @@ router
       });
 
       if (existing === null) {
+        // If the channel doesn't exist, return a 404.
         res.status(404).json({
           success: false,
           message: "This Twitch channel isn't registered with us.",
@@ -159,6 +180,7 @@ router
       } else {
         const result = await prisma.channel.update({
           data: {
+            // Either use the value from the request body, or invert the existing value.
             enabled: parsedBody.enabled ?? !existing.enabled,
           },
           where: {
@@ -176,6 +198,7 @@ router
             },
           },
         });
+
         res.json({
           success: true,
           data: {
@@ -189,10 +212,10 @@ router
       }
     } catch (e) {
       if (e instanceof ZodError) {
+        // If the query parameters are invalid, return an error.
         res.status(400).json({
           success: false,
           message: "The query parameters are invalid.",
-          data: e.format(),
         });
       } else {
         console.error(e);
@@ -204,6 +227,9 @@ router
     }
   })
   .delete(async (req: Request, res: CustomResponse) => {
+    // Delete a channel
+
+    // Channel IDs must be numeric.
     if (!req.params.channelId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,
@@ -227,6 +253,7 @@ router
       });
     } catch (e) {
       if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
+        // If the channel doesn't exist, return a 404.
         res.status(404).json({
           success: false,
           message: "This Twitch channel isn't registered with us.",
