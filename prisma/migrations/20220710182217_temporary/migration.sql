@@ -47,6 +47,27 @@ CREATE TABLE "Quote" (
 );
 
 -- CreateTable
+CREATE TABLE "Command" (
+    "id" SERIAL NOT NULL,
+    "keyword" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    "enabled" BOOLEAN NOT NULL DEFAULT true,
+    "channelId" TEXT NOT NULL,
+
+    CONSTRAINT "Command_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Variable" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "value" INTEGER NOT NULL DEFAULT 0,
+    "commandId" INTEGER NOT NULL,
+
+    CONSTRAINT "Variable_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
 CREATE TABLE "_ChannelToGuild" (
     "A" INTEGER NOT NULL,
     "B" INTEGER NOT NULL
@@ -62,6 +83,12 @@ CREATE UNIQUE INDEX "Guild_guildId_key" ON "Guild"("guildId");
 CREATE UNIQUE INDEX "Quote_channelId_quoteId_key" ON "Quote"("channelId", "quoteId");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "Command_channelId_keyword_key" ON "Command"("channelId", "keyword");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Variable_commandId_name_key" ON "Variable"("commandId", "name");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "_ChannelToGuild_AB_unique" ON "_ChannelToGuild"("A", "B");
 
 -- CreateIndex
@@ -69,6 +96,12 @@ CREATE INDEX "_ChannelToGuild_B_index" ON "_ChannelToGuild"("B");
 
 -- AddForeignKey
 ALTER TABLE "Quote" ADD CONSTRAINT "Quote_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "Channel"("channelId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Command" ADD CONSTRAINT "Command_channelId_fkey" FOREIGN KEY ("channelId") REFERENCES "Channel"("channelId") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Variable" ADD CONSTRAINT "Variable_commandId_fkey" FOREIGN KEY ("commandId") REFERENCES "Command"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_ChannelToGuild" ADD CONSTRAINT "_ChannelToGuild_A_fkey" FOREIGN KEY ("A") REFERENCES "Channel"("id") ON DELETE CASCADE ON UPDATE CASCADE;

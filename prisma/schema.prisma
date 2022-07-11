@@ -23,26 +23,26 @@ model Channel {
   username     String
   token        String
   refreshToken String
-  lastRefresh  DateTime @default(now())
-  registeredAt DateTime @default(now())
-  enabled      Boolean  @default(true)
-  quoteIndex   Int      @default(0)
+  lastRefresh  DateTime  @default(now())
+  registeredAt DateTime  @default(now())
+  enabled      Boolean   @default(true)
+  quoteIndex   Int       @default(0)
   guilds       Guild[]
   quotes       Quote[]
-
+  commands     Command[]
   @@unique([channelId])
 }
 
 model Guild {
   id Int @id @default(autoincrement())
 
-  guildId         String
-  token           String
-  refreshToken    String
-  lastRefresh     DateTime  @default(now())
-  registeredAt    DateTime  @default(now())
-  enabled         Boolean   @default(true)
-  channelChannels Channel[]
+  guildId      String
+  token        String
+  refreshToken String
+  lastRefresh  DateTime  @default(now())
+  registeredAt DateTime  @default(now())
+  enabled      Boolean   @default(true)
+  channels     Channel[]
 
   @@unique([guildId])
 }
@@ -58,4 +58,28 @@ model Quote {
   channelId String
 
   @@unique([channelId, quoteId])
+}
+
+model Command {
+  id Int @id @default(autoincrement())
+
+  keyword   String
+  content   String
+  enabled   Boolean    @default(true)
+  channel   Channel    @relation(fields: [channelId], references: [channelId])
+  channelId String
+  variables Variable[]
+
+  @@unique([channelId, keyword])
+}
+
+model Variable {
+  id Int @id @default(autoincrement())
+
+  name      String
+  value     Int     @default(0)
+  command   Command @relation(fields: [commandId], references: [id])
+  commandId Int
+
+  @@unique([commandId, name])
 }
