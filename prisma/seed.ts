@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 seed();
 
 async function seed() {
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 20; i++) {
     await prisma.channel.create({
       data: {
         channelId: generateNumericId(9),
@@ -19,7 +19,7 @@ async function seed() {
     });
   }
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 20; i++) {
     await prisma.guild.create({
       data: {
         guildId: generateNumericId(18),
@@ -31,7 +31,7 @@ async function seed() {
     });
   }
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 20; i++) {
     const c = await prisma.$queryRaw<
       Channel[]
     >`SELECT * FROM "Channel" ORDER BY RANDOM() LIMIT 1`;
