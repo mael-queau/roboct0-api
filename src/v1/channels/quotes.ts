@@ -69,7 +69,7 @@ router.get(
 
 router
   .route("/channels/:channelId/quotes")
-  .all(async (req: Request, res: CustomResponse, next) => {
+  .all((req: Request, res: CustomResponse, next) => {
     if (!req.params.channelId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,
@@ -224,7 +224,7 @@ router
 
 router
   .route("/channels/:channelId/quotes/:quoteId")
-  .all(async (req: Request, res: CustomResponse, next) => {
+  .all((req: Request, res: CustomResponse, next) => {
     if (!req.params.channelId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,

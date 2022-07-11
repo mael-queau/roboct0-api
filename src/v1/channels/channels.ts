@@ -83,7 +83,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
 
 router
   .route("/channels/:channelId")
-  .all(async (req: Request, res: CustomResponse, next) => {
+  .all((req: Request, res: CustomResponse, next) => {
     if (!req.params.channelId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,
