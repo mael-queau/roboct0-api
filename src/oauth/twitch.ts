@@ -1,5 +1,5 @@
-import { PrismaClient, Channel } from "@prisma/client";
 import { Router } from "express";
+import { PrismaClient, Channel } from "@prisma/client";
 import { z, ZodError } from "zod";
 import { createState, deleteState } from "./helper";
 
@@ -7,6 +7,7 @@ export const router = Router();
 const prisma = new PrismaClient();
 
 router.get("/twitch", async (_req, res) => {
+  // Create a state token to prevent CSRF.
   const state = await createState();
   const scopes = [
     "channel:manage:broadcast",
@@ -26,15 +27,15 @@ router.get("/twitch", async (_req, res) => {
 });
 
 router.get("/twitch/callback", async (req, res) => {
-  const queryValidator = z.object({
-    code: z.string(),
-    scope: z.string(),
-    state: z.string(),
-  });
-
   try {
+    const queryValidator = z.object({
+      code: z.string(),
+      scope: z.string(),
+      state: z.string(),
+    });
     const parsedQuery = queryValidator.parse(req.query);
 
+    // Check that the state token matches so that we can prevent CSRF.
     const state = await prisma.state.findUnique({
       where: {
         value: parsedQuery.state,
@@ -42,15 +43,22 @@ router.get("/twitch/callback", async (req, res) => {
     });
 
     if (state === null) {
+      // State token is invalid.
       res.status(401).json({
         success: false,
         message: "The 'state' query parameter is invalid.",
       });
     } else {
+      // Exchange the grant code for an access token.
       const { access_token, refresh_token } = await getAccessToken(
         parsedQuery.code
       );
+
+      // Get additional information about the user.
       const userInfo = await getUserInfo(access_token);
+
+      // Create a new channel in the database.
+      // If the channel already exists, update its access token and enable it.
       await prisma.channel.upsert({
         create: {
           channelId: userInfo.id,
@@ -68,6 +76,7 @@ router.get("/twitch/callback", async (req, res) => {
         },
       });
 
+      // Delete the state token.
       await deleteState(state.value);
 
       console.log(
@@ -80,20 +89,24 @@ router.get("/twitch/callback", async (req, res) => {
       });
     }
   } catch (e) {
-    console.error(e);
     if (e instanceof ZodError) {
+      // There was an error from Twitch instead of a code.
       if (req.query.error) {
         res.status(401).json({
           success: false,
           message: req.query.error_description,
         });
       } else {
+        // There was some other error with the query parameters.
         res.status(400).json({
           success: false,
           message: "The query parameters are invalid.",
         });
       }
     } else {
+      // There was some unknown error.
+      // Log it and send a generic error message.
+      console.error(e);
       res.status(500).json({
         success: false,
         message: "Internal server error.",
@@ -164,6 +177,7 @@ export async function refreshToken(channel: Channel): Promise<Channel> {
 
     const { access_token, refresh_token } = dataValidator.parse(data);
 
+    // Update the channel's access token and refresh token.
     const result = await prisma.channel.update({
       data: {
         lastRefresh: new Date(),
@@ -179,9 +193,15 @@ export async function refreshToken(channel: Channel): Promise<Channel> {
     );
     return result;
   } catch (e) {
-    console.log(`❌ Failed to refresh token for ${channel.username}`.red);
-    // if node is in dev mode
+    console.log(
+      `❌ Failed to refresh token for ${channel.username}. The channel has been disabled.`
+        .red
+    );
+    // There was an error refreshing the token.
+    // We need to disable the channel.
+    // Don't actually disable the channel if node is in development mode.
     if (process.env.NODE_ENV !== "development") {
+      // Disable the channel.
       const newChannel = await prisma.channel.update({
         where: {
           id: channel.id,
@@ -200,6 +220,7 @@ export async function refreshToken(channel: Channel): Promise<Channel> {
  * @returns A list of channels that need to be refreshed.
  */
 export async function verifyTokens(): Promise<Channel[]> {
+  // Get all the enabled channels' tokens from the database.
   const channels = await prisma.channel.findMany({
     where: { enabled: true },
   });
@@ -219,6 +240,8 @@ export async function verifyTokens(): Promise<Channel[]> {
       });
       if (!response.ok) {
         if (response.status === 401) {
+          // The access token has expired.
+          // Add the channel to the list of channels that need to be refreshed.
           invalidTokens.push(channel);
         } else {
           throw new Error(`There was an error verifying token ${channel.id}.`);
