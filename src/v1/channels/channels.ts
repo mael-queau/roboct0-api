@@ -14,7 +14,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
   // Query parameters:
   // - search: string - Search for channels by name.
   // - page: number - The page number.
-  // - includeDisabled: boolean - Include disabled channels.
+  // - include_disabled: boolean - Include disabled channels.
   try {
     const queryValidator = z.object({
       search: z.string().optional(),
@@ -26,7 +26,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
           "Page must be a positive integer"
         )
         .transform((s) => parseInt(s)),
-      includeDisabled: z.boolean().default(false),
+      include_disabled: z.boolean().default(false),
     });
     const parsedQuery = queryValidator.parse(req.query);
 
@@ -43,7 +43,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
       },
       where: {
         // If includeDisabled is true, don't filter by enabled.
-        enabled: parsedQuery.includeDisabled ? true : undefined,
+        enabled: parsedQuery.include_disabled ? undefined : true,
         // If search is set, search for channels by name (an empty string will search for all channels).
         username: {
           contains: parsedQuery.search,
