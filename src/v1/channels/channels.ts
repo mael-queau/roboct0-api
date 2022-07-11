@@ -26,7 +26,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
           "Page must be a positive integer"
         )
         .transform((s) => parseInt(s)),
-      include_disabled: z.boolean().default(false),
+      include_disabled: z.string().optional(),
     });
     const parsedQuery = queryValidator.parse(req.query);
 
@@ -34,6 +34,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
       select: {
         channelId: true,
         username: true,
+        enabled: true,
         registeredAt: true,
         _count: {
           select: {
@@ -43,7 +44,7 @@ router.get("/channels", async (req: Request, res: CustomResponse) => {
       },
       where: {
         // If includeDisabled is true, don't filter by enabled.
-        enabled: parsedQuery.include_disabled ? undefined : true,
+        enabled: parsedQuery.include_disabled !== undefined ? undefined : true,
         // If search is set, search for channels by name (an empty string will search for all channels).
         username: {
           contains: parsedQuery.search,
