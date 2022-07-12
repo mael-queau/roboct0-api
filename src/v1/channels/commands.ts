@@ -397,21 +397,6 @@ async function createVariables(id: number, content: string) {
   // Extract the variables from the content.
   const variables = extractVariables(content);
 
-  if (variables.length > 10) {
-    // If there are more than 10 variables, throw an error.
-    throw new Error("Too many variables");
-  }
-
-  for (const variable of variables) {
-    if (variable.match(/^[0-9]/) || variable.length > 10) {
-      // If a variable starts with a number or is longer than 10 characters, throw an error.
-      throw new Error("Invalid variable name: " + variable);
-    } else if (variable.length === 0) {
-      // If a variable is empty, throw an error.
-      throw new Error("Empty variable name");
-    }
-  }
-
   // Create an array of variables to insert.
   const insertData = variables.map((variable) => ({
     commandId: id,
@@ -440,11 +425,16 @@ function extractVariables(content: string): string[] {
     return [];
   }
 
-  const validRegex = /^[a-zA-Z][a-zA-Z0-9_]{0,9}$/;
+  const validRegex = /^§[a-zA-Z][a-zA-Z0-9_]{0,9}$/;
 
   // Check if the variables are valid.
   if (!variables.every((variable) => validRegex.test(variable))) {
     throw new Error("Invalid variable name");
+  }
+
+  if (variables.length > 10) {
+    // If there are more than 10 variables, throw an error.
+    throw new Error("Too many variables");
   }
 
   // Return the variables without the §.
