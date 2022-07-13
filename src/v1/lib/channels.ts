@@ -240,3 +240,35 @@ export async function verifyChannel(id: string) {
     throw new FormattedError();
   }
 }
+
+/**
+ * Gets the OAuth2 access token for a channel.
+ * @param channelId The channel ID.
+ * @returns The OAuth2 token.
+ */
+export async function getChannelToken(channelId: string) {
+  try {
+    const result = await prisma.channel.findUnique({
+      select: {
+        token: true,
+      },
+      where: {
+        channelId: channelId,
+      },
+    });
+
+    if (result === null) {
+      throw new FormattedError(
+        "This Twitch channel isn't registered with us.",
+        404
+      );
+    }
+
+    return result.token;
+  } catch (e) {
+    if (e instanceof FormattedError) throw e;
+
+    console.error(e);
+    throw new FormattedError();
+  }
+}

@@ -8,6 +8,7 @@ import {
   searchChannels,
   toggleChannel,
   deleteChannel,
+  getChannelToken,
 } from "../lib/channels";
 
 const router = Router();
@@ -150,3 +151,36 @@ router
       }
     }
   });
+
+router.get(
+  "/channels/:channelId/token",
+  async (req: Request, res: CustomResponse) => {
+    if (!req.params.channelId.match(/^[0-9]+$/)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid channel ID.",
+      });
+      return;
+    }
+
+    const { channelId } = req.params;
+
+    try {
+      const result = await getChannelToken(channelId);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (e) {
+      if (e instanceof FormattedError) e.send(res);
+      else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error.",
+        });
+      }
+    }
+  }
+);
