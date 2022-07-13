@@ -54,7 +54,7 @@ model Quote {
   content   String
   date      DateTime @default(now())
   enabled   Boolean  @default(true)
-  channel   Channel  @relation(fields: [channelId], references: [channelId])
+  channel   Channel  @relation(fields: [channelId], references: [channelId], onDelete: Cascade)
   channelId String
 
   @@unique([channelId, quoteId])
@@ -66,7 +66,7 @@ model Command {
   keyword   String
   content   String
   enabled   Boolean    @default(true)
-  channel   Channel    @relation(fields: [channelId], references: [channelId])
+  channel   Channel    @relation(fields: [channelId], references: [channelId], onDelete: Cascade)
   channelId String
   variables Variable[]
 
@@ -78,7 +78,7 @@ model Variable {
 
   name      String
   value     Int     @default(0)
-  command   Command @relation(fields: [commandId], references: [id])
+  command   Command @relation(fields: [commandId], references: [id], onDelete: Cascade)
   commandId Int
 
   @@unique([commandId, name])

@@ -1,19 +1,24 @@
 import { Router, Request } from "express";
 import { z, ZodError } from "zod";
-import { PrismaClient, Quote } from "@prisma/client";
-import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
-import { CustomResponse } from "../helper";
+import { CustomResponse } from "../types/response";
+import { FormattedError } from "../types/error";
+
+import {
+  getQuote,
+  getRandomQuote,
+  searchQuotes,
+  createQuote,
+  updateQuote,
+  toggleQuote,
+  deleteQuote,
+} from "../lib/quotes";
 
 const router = Router();
 export default router;
 
-const prisma = new PrismaClient();
-
 router.get(
   "/channels/:channelId/randomQuote",
   async (req: Request, res: CustomResponse) => {
-    // Get a random quote from a channel.
-
     if (!req.params.channelId.match(/^[0-9]+$/)) {
       res.status(400).json({
         success: false,
@@ -25,44 +30,18 @@ router.get(
     const { channelId } = req.params;
 
     try {
-      // Check if the channel exists.
-      const channel = await prisma.channel.findUnique({
-        where: {
-          channelId,
-        },
-      });
+      const result = await getRandomQuote(channelId);
 
-      if (channel === null) {
-        res.status(404).json({
-          success: false,
-          message: "This Twitch channel isn't registered with us.",
-        });
-        return;
-      }
-
-      // Since Prisma doesn't allow to randomly select a row, we have to do it manually.
-      const result = await prisma.$queryRaw<
-        Quote[]
-      >`SELECT "quoteId", "content", "date" FROM "Quote" WHERE "channelId" = ${channelId} AND "enabled" = true ORDER BY RANDOM() LIMIT 1`;
-
-      if (result.length === 0) {
-        res.status(404).json({
-          success: true,
-          message: "This channel doesn't have any quotes yet.",
-        });
-      } else {
-        // Otherwise, return the quote.
-        res.status(200).json({
-          success: true,
-          data: result[0], // The result is an array, so we need to get the first element.
-        });
-      }
+      return result;
     } catch (e) {
-      console.error(e);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error.",
-      });
+      if (e instanceof FormattedError) e.send(res);
+      else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error.",
+        });
+      }
     }
   }
 );
@@ -80,12 +59,6 @@ router
     next();
   })
   .get(async (req: Request, res: CustomResponse) => {
-    // List quotes from a channel.
-    // Query parameters:
-    // - search: string - Search for quotes containing this string.
-    // - page: number - The page number.
-    // - include_disabled: boolean - Whether to include disabled quotes.
-
     const { channelId } = req.params;
 
     try {
@@ -99,49 +72,28 @@ router
             "Page must be a positive integer"
           )
           .transform((s) => parseInt(s) - 1),
-        include_disabled: z.boolean().default(false),
+        force: z
+          .string()
+          .optional()
+          .transform((s) => s !== undefined),
       });
 
-      const parsedQuery = queryValidator.parse(req.query);
+      const query = queryValidator.parse(req.query);
 
-      const result = await prisma.quote.findMany({
-        select: {
-          quoteId: true,
-          channelId: true,
-          content: true,
-          date: true,
-          enabled: true,
-        },
-        where: {
-          enabled: true,
-          channelId: channelId,
-          content: {
-            // Make use of PostgreSQL's fulltext search.
-            contains: parsedQuery.search,
-            mode: "insensitive",
-          },
-        },
-        orderBy: {
-          // Order by most recent.
-          date: "desc",
-        },
-        take: 10,
-        skip: 10 * parsedQuery.page,
+      const result = await searchQuotes(
+        channelId,
+        query.search,
+        query.page,
+        query.force
+      );
+
+      res.status(200).json({
+        success: true,
+        data: result,
       });
-
-      if (result.length === 0) {
-        res.status(404).json({
-          success: true,
-          message: "This channel doesn't have any quotes yet.",
-        });
-      } else {
-        res.status(200).json({
-          success: true,
-          data: result,
-        });
-      }
     } catch (e) {
-      if (e instanceof ZodError) {
+      if (e instanceof FormattedError) e.send(res);
+      else if (e instanceof ZodError) {
         res.status(400).json({
           success: false,
           message: "The query parameters are invalid.",
@@ -156,67 +108,34 @@ router
     }
   })
   .post(async (req: Request, res: CustomResponse) => {
-    // Create a quote.
-    // Body parameters:
-    // - content: string - The quote content.
-
     const { channelId } = req.params;
 
     try {
-      const queryValidator = z.object({
+      const bodyValidator = z.object({
+        force: z.boolean().default(false),
         content: z.string(),
       });
 
-      const parsedQuery = queryValidator.parse(req.body);
+      const body = bodyValidator.parse(req.body);
 
-      // Get the channel's new quote index
-      const channel = await prisma.channel.update({
-        data: {
-          quoteIndex: {
-            increment: 1,
-          },
-        },
-        select: {
-          quoteIndex: true,
-        },
-        where: {
-          channelId: channelId,
-        },
-      });
-
-      // Create the quote
-      const result = await prisma.quote.create({
-        data: {
-          quoteId: channel.quoteIndex + 1,
-          channelId: channelId,
-          content: parsedQuery.content,
-        },
-      });
+      const result = await createQuote(channelId, body.content, body.force);
 
       res.status(201).json({
         success: true,
         data: result,
       });
     } catch (e) {
-      if (e instanceof ZodError) {
+      if (e instanceof FormattedError) e.send(res);
+      else if (e instanceof ZodError) {
         res.status(400).json({
           success: false,
-          message: "The query parameters are invalid.",
-          data: e.format(),
-        });
-      } else if (
-        e instanceof PrismaClientKnownRequestError &&
-        e.code === "P2025"
-      ) {
-        res.status(404).json({
-          success: false,
-          message: "This Twitch channel isn't registered with us.",
+          message: "The request body is invalid.",
         });
       } else {
         console.error(e);
         res.status(500).json({
           success: false,
-          message: "An unknown error occured.",
+          message: "Internal server error.",
         });
       }
     }
@@ -242,66 +161,41 @@ router
     next();
   })
   .get(async (req: Request, res: CustomResponse) => {
-    // Get a quote.
-
     const { channelId, quoteId } = req.params;
 
     try {
-      const result = await prisma.quote.findUnique({
-        select: {
-          quoteId: true,
-          channelId: true,
-          content: true,
-          date: true,
-          enabled: true,
-        },
-        where: {
-          channelId_quoteId: {
-            channelId: channelId,
-            quoteId: parseInt(quoteId),
-          },
-        },
-      });
+      const result = await getQuote(channelId, parseInt(quoteId));
 
-      if (result === null) {
-        res.status(404).json({
-          success: true,
-          message: "This quote doesn't exist.",
-        });
-      } else {
-        res.status(200).json({
-          success: true,
-          data: result,
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (e) {
+      if (e instanceof FormattedError) e.send(res);
+      else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error.",
         });
       }
-    } catch (e) {
-      console.error(e);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error.",
-      });
     }
   })
   .put(async (req: Request, res: CustomResponse) => {
-    // Update a quote.
-    // Body parameters:
-    // - content: string - The new content (optional).
-    // - date: string - The new date (optional).
-
     const { channelId, quoteId } = req.params;
 
     try {
       const bodyValidator = z.object({
+        force: z.boolean().default(false),
         content: z.string().optional(),
         date: z.string().optional(),
       });
 
-      const parsedBody = bodyValidator.parse(req.body);
+      const body = bodyValidator.parse(req.body);
 
-      // If a date was provided, make sure it is in the ISO8601 format.
-      if (parsedBody.date) {
+      if (body.date) {
         const dateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
-        if (!parsedBody.date.match(dateRegex)) {
+        if (!body.date.match(dateRegex)) {
           res.status(400).json({
             success: false,
             message: "The date must be in the ISO8601 format.",
@@ -310,70 +204,24 @@ router
         }
       }
 
-      // Retrieve the existing quote.
-      const existing = await prisma.quote.findUnique({
-        select: {
-          quoteId: true,
-          channelId: true,
-          content: true,
-          date: true,
-          enabled: true,
-        },
-        where: {
-          channelId_quoteId: {
-            channelId: channelId,
-            quoteId: parseInt(quoteId),
-          },
-        },
-      });
-
-      if (existing === null) {
-        res.status(404).json({
-          success: true,
-          message: "This quote doesn't exist.",
-        });
-        return;
-      }
-
-      // Update the quote.
-      const result = await prisma.quote.update({
-        data: {
-          // Update the content and / or date depending on what was provided.
-          content: parsedBody.content ?? existing.content,
-          date: parsedBody.date ?? existing.date,
-        },
-        select: {
-          quoteId: true,
-          channelId: true,
-          content: true,
-          date: true,
-          enabled: true,
-        },
-        where: {
-          channelId_quoteId: {
-            channelId: channelId,
-            quoteId: parseInt(quoteId),
-          },
-        },
-      });
+      const result = await updateQuote(
+        channelId,
+        parseInt(quoteId),
+        body.content,
+        body.date ? new Date(body.date) : undefined,
+        body.force
+      );
 
       res.status(200).json({
         success: true,
         data: result,
       });
     } catch (e) {
-      if (e instanceof ZodError) {
+      if (e instanceof FormattedError) e.send(res);
+      else if (e instanceof ZodError) {
         res.status(400).json({
           success: false,
           message: "The query parameters are invalid.",
-        });
-      } else if (
-        e instanceof PrismaClientKnownRequestError &&
-        e.code === "P2025"
-      ) {
-        res.status(404).json({
-          success: false,
-          message: "This quote doesn't exist.",
         });
       } else {
         console.error(e);
@@ -385,64 +233,30 @@ router
     }
   })
   .patch(async (req: Request, res: CustomResponse) => {
-    // Toggle a quote.
-    // Body parameters:
-    // - enabled: boolean - The new enabled value (optional).
-
     const { channelId, quoteId } = req.params;
 
     try {
       const bodyValidator = z.object({
+        force: z.boolean().default(false),
         enabled: z.boolean().optional(),
       });
 
-      const parsedBody = bodyValidator.parse(req.body);
+      const body = bodyValidator.parse(req.body);
 
-      const existing = await prisma.quote.findUnique({
-        select: {
-          enabled: true,
-        },
-        where: {
-          channelId_quoteId: {
-            channelId: channelId,
-            quoteId: parseInt(quoteId),
-          },
-        },
+      const result = await toggleQuote(
+        channelId,
+        parseInt(quoteId),
+        body.enabled,
+        body.force
+      );
+
+      res.status(200).json({
+        success: true,
+        data: result,
       });
-
-      if (existing === null) {
-        res.status(404).json({
-          success: false,
-          message: "This quote doesn't exist.",
-        });
-      } else {
-        const result = await prisma.quote.update({
-          data: {
-            // Update the enabled value if it was provided.
-            // If it wasn't, toggle the value.
-            enabled: parsedBody.enabled ?? !existing.enabled,
-          },
-          select: {
-            quoteId: true,
-            channelId: true,
-            content: true,
-            date: true,
-            enabled: true,
-          },
-          where: {
-            channelId_quoteId: {
-              channelId: channelId,
-              quoteId: parseInt(quoteId),
-            },
-          },
-        });
-        res.json({
-          success: true,
-          data: result,
-        });
-      }
     } catch (e) {
-      if (e instanceof ZodError) {
+      if (e instanceof FormattedError) e.send(res);
+      else if (e instanceof ZodError) {
         res.status(400).json({
           success: false,
           message: "The query parameters are invalid.",
@@ -457,31 +271,18 @@ router
     }
   })
   .delete(async (req: Request, res: CustomResponse) => {
-    // Delete a quote.
-
     const { channelId, quoteId } = req.params;
 
     try {
-      await prisma.quote.delete({
-        where: {
-          channelId_quoteId: {
-            channelId: channelId,
-            quoteId: parseInt(quoteId),
-          },
-        },
-      });
+      const result = await deleteQuote(channelId, parseInt(quoteId));
 
-      res.json({
+      res.status(200).json({
         success: true,
-        message: "The quote was successfully deleted.",
+        data: result,
       });
     } catch (e) {
-      if (e instanceof PrismaClientKnownRequestError && e.code === "P2025") {
-        res.status(404).json({
-          success: false,
-          message: "This quote doesn't exist.",
-        });
-      } else {
+      if (e instanceof FormattedError) e.send(res);
+      else {
         console.error(e);
         res.status(500).json({
           success: false,
