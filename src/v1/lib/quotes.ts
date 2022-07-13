@@ -1,8 +1,9 @@
 import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
-import { FormattedError } from "../types/error";
-import { verifyChannel } from "./channels";
 import { PrismaClientKnownRequestError } from "@prisma/client/runtime";
+import { FormattedError } from "../types/error";
+
+import { verifyChannel } from "./channels";
 
 const prisma = new PrismaClient();
 

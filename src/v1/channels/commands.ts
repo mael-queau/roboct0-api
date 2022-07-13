@@ -4,14 +4,21 @@ import { CustomResponse } from "../types/response";
 import { FormattedError } from "../types/error";
 
 import {
-  createCommand,
-  deleteCommand,
   getCommand,
-  keywordRegex,
   listCommands,
-  toggleCommand,
+  createCommand,
   updateCommand,
+  toggleCommand,
+  deleteCommand,
+  keywordRegex,
 } from "../lib/commands";
+import {
+  getVariable,
+  listVariables,
+  setVariable,
+  incrementVariable,
+  variableNameRegex,
+} from "../lib/variables";
 
 const router = Router();
 export default router;
@@ -35,12 +42,8 @@ router
       const queryValidator = z.object({
         page: z
           .string()
-          .default("1")
-          .refine(
-            (s) => /^[0-9]+$/.test(s) && parseInt(s) > 0,
-            "Page must be a positive integer"
-          )
-          .transform((s) => parseInt(s) - 1),
+          .optional()
+          .transform((s) => (s === undefined ? undefined : parseInt(s))),
         force: z
           .string()
           .optional()
@@ -49,7 +52,7 @@ router
 
       const query = queryValidator.parse(req.query);
 
-      const results = listCommands(channelId, query.page, query.force);
+      const results = await listCommands(channelId, query.page, query.force);
 
       res.status(200).json({
         success: true,
@@ -57,17 +60,18 @@ router
       });
     } catch (e) {
       if (e instanceof FormattedError) e.send(res);
-      if (e instanceof ZodError) {
+      else if (e instanceof ZodError) {
         res.status(400).json({
           success: false,
-          message: e.message,
+          message: "The query parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
         });
       }
-      console.log(e);
-      res.status(500).json({
-        success: false,
-        message: "An error occurred.",
-      });
     }
   })
   .post(async (req: Request, res: CustomResponse) => {
@@ -77,10 +81,7 @@ router
       const bodyValidator = z.object({
         keyword: z.string(),
         content: z.string(),
-        force: z
-          .string()
-          .optional()
-          .transform((s) => s !== undefined),
+        force: z.boolean().default(false),
       });
 
       const body = bodyValidator.parse(req.body);
@@ -98,17 +99,18 @@ router
       });
     } catch (e) {
       if (e instanceof FormattedError) e.send(res);
-      if (e instanceof ZodError) {
+      else if (e instanceof ZodError) {
         res.status(400).json({
           success: false,
-          message: e.message,
+          message: "The body parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
         });
       }
-      console.log(e);
-      res.status(500).json({
-        success: false,
-        message: "An error occurred.",
-      });
     }
   });
 
@@ -153,12 +155,18 @@ router
       });
     } catch (e) {
       if (e instanceof FormattedError) e.send(res);
-
-      console.error(e);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      else if (e instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "The query parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+      }
     }
   })
   .put(async (req: Request, res: CustomResponse) => {
@@ -167,10 +175,7 @@ router
     try {
       const bodyValidator = z.object({
         content: z.string(),
-        force: z
-          .string()
-          .optional()
-          .transform((s) => s !== undefined),
+        force: z.boolean().default(false),
       });
 
       const body = bodyValidator.parse(req.body);
@@ -188,12 +193,18 @@ router
       });
     } catch (e) {
       if (e instanceof FormattedError) e.send(res);
-
-      console.error(e);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      else if (e instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "The body parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+      }
     }
   })
   .patch(async (req: Request, res: CustomResponse) => {
@@ -202,10 +213,7 @@ router
     try {
       const bodyValidator = z.object({
         enabled: z.boolean().optional(),
-        force: z
-          .string()
-          .optional()
-          .transform((s) => s !== undefined),
+        force: z.boolean().default(false),
       });
 
       const body = bodyValidator.parse(req.body);
@@ -223,12 +231,18 @@ router
       });
     } catch (e) {
       if (e instanceof FormattedError) e.send(res);
-
-      console.error(e);
-      res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
+      else if (e instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "The body parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+      }
     }
   })
   .delete(async (req: Request, res: CustomResponse) => {
@@ -236,10 +250,7 @@ router
 
     try {
       const bodyValidator = z.object({
-        force: z
-          .string()
-          .optional()
-          .transform((s) => s !== undefined),
+        force: z.boolean().default(false),
       });
 
       const body = bodyValidator.parse(req.body);
@@ -252,11 +263,245 @@ router
       });
     } catch (e) {
       if (e instanceof FormattedError) e.send(res);
+      else if (e instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "The body parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+      }
+    }
+  });
 
-      console.error(e);
-      res.status(500).json({
+router.get(
+  "/channels/:channelId/commands/:keyword/variables",
+  async (req: Request, res: CustomResponse) => {
+    if (!req.params.channelId.match(/^[0-9]+$/)) {
+      res.status(400).json({
         success: false,
-        message: "Internal server error",
+        message: "Invalid channel ID.",
       });
+      return;
+    }
+    if (!req.params.keyword.match(keywordRegex)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid keyword.",
+      });
+      return;
+    }
+
+    const { channelId, keyword } = req.params;
+
+    try {
+      const queryValidator = z.object({
+        force: z
+
+          .string()
+          .optional()
+          .transform((s) => s !== undefined),
+      });
+
+      const query = queryValidator.parse(req.query);
+
+      const result = await listVariables(channelId, keyword, query.force);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (e) {
+      if (e instanceof FormattedError) e.send(res);
+      else if (e instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "The body parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+      }
+    }
+  }
+);
+
+router
+  .route("/channels/:channelId/commands/:keyword/variables/:name")
+  .all((req: Request, res: CustomResponse, next) => {
+    if (!req.params.channelId.match(/^[0-9]+$/)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid channel ID.",
+      });
+      return;
+    }
+    if (!req.params.keyword.match(keywordRegex)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid keyword.",
+      });
+      return;
+    }
+    if (!req.params.name.match(variableNameRegex)) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid variable name.",
+      });
+      return;
+    }
+    next();
+  })
+  .get(async (req: Request, res: CustomResponse) => {
+    const { channelId, keyword, name } = req.params;
+
+    try {
+      const queryValidator = z.object({
+        force: z
+
+          .string()
+          .optional()
+          .transform((s) => s !== undefined),
+      });
+
+      const query = queryValidator.parse(req.query);
+
+      const result = await getVariable(channelId, keyword, name, query.force);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (e) {
+      if (e instanceof FormattedError) e.send(res);
+      else if (e instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "The query parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+      }
+    }
+  })
+  .put(async (req: Request, res: CustomResponse) => {
+    const { channelId, keyword, name } = req.params;
+
+    try {
+      const bodyValidator = z.object({
+        value: z.number(),
+        force: z.boolean().default(false),
+      });
+
+      const body = bodyValidator.parse(req.body);
+
+      const result = await setVariable(
+        channelId,
+        keyword,
+        name,
+        body.value,
+        body.force
+      );
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (e) {
+      if (e instanceof FormattedError) e.send(res);
+      else if (e instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "The body parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+      }
+    }
+  })
+  .patch(async (req: Request, res: CustomResponse) => {
+    const { channelId, keyword, name } = req.params;
+
+    try {
+      const bodyValidator = z.object({
+        value: z.number().optional(),
+        force: z.boolean().default(false),
+      });
+
+      const body = bodyValidator.parse(req.body);
+
+      const result = await incrementVariable(
+        channelId,
+        keyword,
+        name,
+        body.value,
+        body.force
+      );
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (e) {
+      if (e instanceof FormattedError) e.send(res);
+      else if (e instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "The body parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+      }
+    }
+  })
+  .delete(async (req: Request, res: CustomResponse) => {
+    const { channelId, keyword, name } = req.params;
+
+    try {
+      const bodyValidator = z.object({
+        force: z.boolean().default(false),
+      });
+
+      const body = bodyValidator.parse(req.body);
+
+      const result = await setVariable(channelId, keyword, name, 0, body.force);
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (e) {
+      if (e instanceof FormattedError) e.send(res);
+      else if (e instanceof ZodError) {
+        res.status(400).json({
+          success: false,
+          message: "The body parameters are invalid.",
+        });
+      } else {
+        console.error(e);
+        res.status(500).json({
+          success: false,
+          message: "Internal server error",
+        });
+      }
     }
   });
